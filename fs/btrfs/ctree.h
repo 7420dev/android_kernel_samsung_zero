@@ -499,7 +499,12 @@ struct btrfs_super_block {
  * Note we don't actually support it, we're just reserving the
  * number
  */
-#define BTRFS_FEATURE_INCOMPAT_COMPRESS_LZOv2	(1ULL << 4)
+/*
+ * This covers adding LZ4 in real-time and high-compression modes
+ *
+ * TODO: cover also the other container formats
+ */
+#define BTRFS_FEATURE_INCOMPAT_COMPRESSION_LZ4  (1ULL << 4)
 
 /*
  * older kernels tried to do bigger metadata blocks, but the
@@ -519,6 +524,7 @@ struct btrfs_super_block {
 	 BTRFS_FEATURE_INCOMPAT_MIXED_GROUPS |		\
 	 BTRFS_FEATURE_INCOMPAT_BIG_METADATA |		\
 	 BTRFS_FEATURE_INCOMPAT_COMPRESS_LZO |		\
+	 BTRFS_FEATURE_INCOMPAT_COMPRESSION_LZ4 |	\
 	 BTRFS_FEATURE_INCOMPAT_RAID56 |		\
 	 BTRFS_FEATURE_INCOMPAT_EXTENDED_IREF |		\
 	 BTRFS_FEATURE_INCOMPAT_SKINNY_METADATA)
@@ -686,8 +692,10 @@ enum btrfs_compression_type {
 	BTRFS_COMPRESS_NONE  = 0,
 	BTRFS_COMPRESS_ZLIB  = 1,
 	BTRFS_COMPRESS_LZO   = 2,
-	BTRFS_COMPRESS_TYPES = 2,
-	BTRFS_COMPRESS_LAST  = 3,
+	BTRFS_COMPRESS_LZ4   = 3,
+	BTRFS_COMPRESS_LZ4HC = 4,
+	BTRFS_COMPRESS_TYPES = 5,
+	BTRFS_COMPRESS_LAST  = 5,
 };
 
 struct btrfs_inode_item {
