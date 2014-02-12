@@ -251,7 +251,6 @@ static struct tcp_congestion_ops mptcp_ccc = {
 	.cong_avoid	= mptcp_ccc_cong_avoid,
 	.cwnd_event	= mptcp_ccc_cwnd_event,
 	.set_state	= mptcp_ccc_set_state,
-	.min_cwnd	= tcp_reno_min_cwnd,
 	.owner		= THIS_MODULE,
 	.name		= "lia",
 };
