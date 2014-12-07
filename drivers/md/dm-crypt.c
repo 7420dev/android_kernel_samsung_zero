@@ -1764,7 +1764,7 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 					  WQ_NON_REENTRANT|
 					  WQ_CPU_INTENSIVE|
 					  WQ_MEM_RECLAIM,
-					  1);
+					  num_possible_cpus() * 2);
 		if (!cc->crypt_queue) {
 			ti->error = "Couldn't create kcryptd queue";
 			goto bad;
