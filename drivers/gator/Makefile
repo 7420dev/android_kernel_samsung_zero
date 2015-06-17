@@ -1,10 +1,11 @@
 ifneq ($(KERNELRELEASE),)
 
 # Uncomment the following line to enable kernel stack unwinding within gator, or update gator_backtrace.c
-# EXTRA_CFLAGS +=	-DGATOR_KERNEL_STACK_UNWINDING
-
+EXTRA_CFLAGS +=	-DGATOR_KERNEL_STACK_UNWINDING
 CONFIG_GATOR ?= m
 obj-$(CONFIG_GATOR) := gator.o
+
+#obj-y := gator.o
 
 gator-y :=	gator_main.o \
 		gator_events_block.o \
