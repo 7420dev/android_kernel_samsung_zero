@@ -20,7 +20,7 @@
 #include <linux/kthread.h>
 
 #include "mobicore_driver_api.h"
-#include "tui_ioctl.h"
+#include "public/tui_ioctl.h"
 #include "tlcTui.h"
 #include "dciTui.h"
 #include "tui-hal.h"

@@ -26,7 +26,7 @@
 #include <linux/ktime.h>
 #include <linux/switch.h>
 #include "../../../../video/exynos/decon/decon.h"
-#include "tui_ioctl.h"
+#include "public/tui_ioctl.h"
 #include "dciTui.h"
 #include "tlcTui.h"
 #include "tui-hal.h"

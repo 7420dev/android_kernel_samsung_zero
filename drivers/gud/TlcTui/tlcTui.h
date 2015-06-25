@@ -15,6 +15,8 @@
 #ifndef TLCTUI_H_
 #define TLCTUI_H_
 
+#include "public/tui_ioctl.h"
+
 void reset_global_command_id(void);
 int tlc_wait_cmd(uint32_t *cmd_id);
 int tlc_ack_cmd(struct tlc_tui_response_t *rsp_id);

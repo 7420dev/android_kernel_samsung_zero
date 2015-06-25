@@ -24,7 +24,7 @@
 #include <linux/uaccess.h>
 #include <linux/switch.h>
 
-#include "tui_ioctl.h"
+#include "public/tui_ioctl.h"
 #include "tlcTui.h"
 #include "mobicore_driver_api.h"
 #include "dciTui.h"
