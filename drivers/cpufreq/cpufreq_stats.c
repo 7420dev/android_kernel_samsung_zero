@@ -300,7 +300,7 @@ static void cpufreq_stats_free_sysfs(unsigned int cpu)
 
 	if (!policy_is_shared(policy)) {
 		pr_debug("%s: Free sysfs stat\n", __func__);
-		sysfs_remove_group(policy->kobj, &stats_attr_group);
+		sysfs_remove_group(&policy->kobj, &stats_attr_group);
 	}
 
 put_ref:
@@ -355,7 +355,7 @@ static int cpufreq_stats_create_table(struct cpufreq_policy *policy,
 		goto error_get_fail;
 	}
 
-	ret = sysfs_create_group(data->kobj, &stats_attr_group);
+	ret = sysfs_create_group(&data->kobj, &stats_attr_group);
 	if (ret)
 		goto error_out;
 
