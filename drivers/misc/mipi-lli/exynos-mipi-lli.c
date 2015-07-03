@@ -36,6 +36,12 @@
 #include "exynos7420-mipi-lli.c"
 #endif
 
+/* Disable debugging kernel messages */
+#undef dev_err
+#undef dev_info
+#define dev_err  (void)sizeof
+#define dev_info (void)sizeof
+
 #define EXYNOS_LLI_LINK_START		(0x4000)
 /*
  * 5ns, Default System Clock 100MHz
