@@ -38,7 +38,7 @@ cd $KERNELDIR
 rm -rf $RAMFS_TMP/tmp/*
 
 cd $RAMFS_TMP
-find . | fakeroot cpio -H newc -o | lzop -1 > $RAMFS_TMP.cpio.lzo
+find . | fakeroot cpio -H newc -o | lzop -9 > $RAMFS_TMP.cpio.lzo
 ls -lh $RAMFS_TMP.cpio.lzo
 cd $KERNELDIR
 
