@@ -144,46 +144,51 @@ extern struct page *empty_zero_page;
 #define pte_valid_user(pte) \
 	((pte_val(pte) & (PTE_VALID | PTE_USER)) == (PTE_VALID | PTE_USER))
 
+static inline pte_t clear_pte_bit(pte_t pte, pgprot_t prot)
+{
+	pte_val(pte) &= ~pgprot_val(prot);
+	return pte;
+}
+
+static inline pte_t set_pte_bit(pte_t pte, pgprot_t prot)
+{
+	pte_val(pte) |= pgprot_val(prot);
+	return pte;
+}
+
 static inline pte_t pte_wrprotect(pte_t pte)
 {
-	pte_val(pte) &= ~PTE_WRITE;
-	return pte;
+	return clear_pte_bit(pte, __pgprot(PTE_WRITE));
 }
 
 static inline pte_t pte_mkwrite(pte_t pte)
 {
-	pte_val(pte) |= PTE_WRITE;
-	return pte;
+	return set_pte_bit(pte, __pgprot(PTE_WRITE));
 }
 
 static inline pte_t pte_mkclean(pte_t pte)
 {
-	pte_val(pte) &= ~PTE_DIRTY;
-	return pte;
+	return clear_pte_bit(pte, __pgprot(PTE_DIRTY));
 }
 
 static inline pte_t pte_mkdirty(pte_t pte)
 {
-	pte_val(pte) |= PTE_DIRTY;
-	return pte;
+	return set_pte_bit(pte, __pgprot(PTE_DIRTY));
 }
 
 static inline pte_t pte_mkold(pte_t pte)
 {
-	pte_val(pte) &= ~PTE_AF;
-	return pte;
+	return clear_pte_bit(pte, __pgprot(PTE_AF));
 }
 
 static inline pte_t pte_mkyoung(pte_t pte)
 {
-	pte_val(pte) |= PTE_AF;
-	return pte;
+	return set_pte_bit(pte, __pgprot(PTE_AF));
 }
 
 static inline pte_t pte_mkspecial(pte_t pte)
 {
-	pte_val(pte) |= PTE_SPECIAL;
-	return pte;
+	return set_pte_bit(pte, __pgprot(PTE_SPECIAL));
 }
 #ifdef CONFIG_TIMA_RKP
 extern  int printk(const char *s, ...);
@@ -273,7 +278,7 @@ static inline pmd_t pte_pmd(pte_t pte)
 #define pmd_mkwrite(pmd)	pte_pmd(pte_mkwrite(pmd_pte(pmd)))
 #define pmd_mkdirty(pmd)	pte_pmd(pte_mkdirty(pmd_pte(pmd)))
 #define pmd_mkyoung(pmd)	pte_pmd(pte_mkyoung(pmd_pte(pmd)))
-#define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) &= ~PMD_TYPE_MASK))
+#define pmd_mknotpresent(pmd)	(__pmd(pmd_val(pmd) & ~PMD_TYPE_MASK))
 
 #define __HAVE_ARCH_PMD_WRITE
 #define pmd_write(pmd)		pte_write(pmd_pte(pmd))
@@ -431,7 +436,7 @@ static inline pmd_t pmd_modify(pmd_t pmd, pgprot_t newprot)
 extern pgd_t swapper_pg_dir[PTRS_PER_PGD];
 extern pgd_t idmap_pg_dir[PTRS_PER_PGD];
 
-#define SWAPPER_DIR_SIZE	(3 * PAGE_SIZE)
+#define SWAPPER_DIR_SIZE	(2 * PAGE_SIZE)
 #define IDMAP_DIR_SIZE		(2 * PAGE_SIZE)
 
 /*
