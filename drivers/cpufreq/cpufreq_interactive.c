@@ -33,6 +33,7 @@
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
 #include <linux/pm_qos.h>
+#include <linux/powersuspend.h>
 #include <asm/cputime.h>
 #ifdef CONFIG_ANDROID
 #include <asm/uaccess.h>
@@ -84,6 +85,12 @@ static struct mutex gov_lock;
 static cpumask_t regionchange_cpumask;
 static spinlock_t regionchange_cpumask_lock;
 #endif
+
+/* boolean for determining screen on/off state */
+static bool suspended = false;
+
+/* Go to hi speed when CPU load at or above this value on screen-off state */
+#define DEFAULT_GO_HISPEED_LOAD_SCREEN_OFF 110
 
 /* Target load.  Lower values result in higher CPU speeds. */
 #define DEFAULT_TARGET_LOAD 90
@@ -695,20 +702,22 @@ static void cpufreq_interactive_timer(unsigned long data)
 	if (WARN_ON_ONCE(!delta_time))
 		goto rearm;
 #ifdef CONFIG_MODE_AUTO_CHANGE
-	spin_lock_irqsave(&tunables->mode_lock, flags);
-	if (tunables->enforced_mode)
-		new_mode = tunables->enforced_mode;
-	else
-		new_mode = check_mode(data, tunables->mode, now);
-
-	if (new_mode != tunables->mode) {
-		tunables->mode = new_mode;
-		if (new_mode & MULTI_MODE || new_mode & SINGLE_MODE)
-			enter_mode(tunables);
+	if (!suspended) {
+		spin_lock_irqsave(&tunables->mode_lock, flags);
+		if (tunables->enforced_mode)
+			new_mode = tunables->enforced_mode;
 		else
-			exit_mode(tunables);
+			new_mode = check_mode(data, tunables->mode, now);
+
+		if (new_mode != tunables->mode) {
+			tunables->mode = new_mode;
+			if (new_mode & MULTI_MODE || new_mode & SINGLE_MODE)
+				enter_mode(tunables);
+			else
+				exit_mode(tunables);
+		}
+		spin_unlock_irqrestore(&tunables->mode_lock, flags);
 	}
-	spin_unlock_irqrestore(&tunables->mode_lock, flags);
 #endif
 	spin_lock_irqsave(&pcpu->target_freq_lock, flags);
 	do_div(cputime_speedadj, delta_time);
@@ -735,8 +744,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 #endif
 
 	if (cpu_load >= tunables->go_hispeed_load || tunables->boosted) {
-		if (pcpu->policy->cpu == 0 ||
-		    pcpu->policy->cpu == 4) {
+		if ((pcpu->policy->cpu == 0 || pcpu->policy->cpu == 4) && !suspended) {
 			if (pcpu->target_freq < tunables->hispeed_freq) {
 				new_freq = tunables->hispeed_freq;
 			} else {
@@ -746,10 +754,6 @@ static void cpufreq_interactive_timer(unsigned long data)
 					new_freq = tunables->hispeed_freq;
 			}
 		}
-#if 0 /* for debugging purpose */
-		  else {
-			pr_info("%s: not boosting up cpu%d\n", __func__, pcpu->policy->cpu);
-#endif
 	} else {
 		new_freq = choose_freq(pcpu, loadadjfreq);
 		if (new_freq > tunables->hispeed_freq &&
@@ -2766,6 +2770,25 @@ static struct notifier_block cpufreq_interactive_cluster0_max_qos_notifier = {
 #endif
 #endif
 
+static void interactive_early_suspend(struct power_suspend *handler)
+{
+	suspended = true;
+
+	return;
+}
+
+static void interactive_late_resume(struct power_suspend *handler)
+{
+	suspended = false;
+
+	return;
+}
+
+static struct power_suspend interactive_suspend = {
+	.suspend = interactive_early_suspend,
+	.resume = interactive_late_resume,
+};
+
 static int __init cpufreq_interactive_init(void)
 {
 	unsigned int i;
@@ -2783,6 +2806,8 @@ static int __init cpufreq_interactive_init(void)
 		spin_lock_init(&pcpu->target_freq_lock);
 		init_rwsem(&pcpu->enable_sem);
 	}
+
+	register_power_suspend(&interactive_suspend);
 
 	spin_lock_init(&speedchange_cpumask_lock);
 #ifdef CONFIG_PMU_COREMEM_RATIO
