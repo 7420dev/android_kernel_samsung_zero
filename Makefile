@@ -391,8 +391,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 
 # arter97's optimizations
 KBUILD_CFLAGS	+= -pipe -fno-pic -O2 -mcpu=cortex-a57.cortex-a53 -mtune=cortex-a57.cortex-a53
-# -Wno-unused
-KBUILD_CFLAGS	+= -Wno-unused
+# Other unnecessary warnings
+KBUILD_CFLAGS	+= -Wno-unused -Wno-maybe-uninitialized
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
