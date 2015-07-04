@@ -168,11 +168,6 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 	smp_store_cpu_info(cpu);
 
 	/*
-	 * Log the CPU info before it is marked online and might get read.
-	 */
-	cpuinfo_store_cpu();
-
-	/*
 	 * OK, now it's safe to let the boot CPU continue.  Wait for
 	 * the CPU migration code to notice that the CPU is online
 	 * before we continue.
@@ -251,19 +246,6 @@ int __cpu_disable(void)
 	return 0;
 }
 
-static int op_cpu_kill(unsigned int cpu)
-{
-	/*
-	 * If we have no means of synchronising with the dying CPU, then assume
-	 * that it is really dead. We can only wait for an arbitrary length of
-	 * time and hope that it's dead, so let's skip the wait and just hope.
-	 */
-	if (!cpu_ops[cpu]->cpu_kill)
-		return 1;
-
-	return cpu_ops[cpu]->cpu_kill(cpu);
-}
-
 static DECLARE_COMPLETION(cpu_died);
 
 /*
@@ -277,15 +259,6 @@ void __cpu_die(unsigned int cpu)
 		return;
 	}
 	pr_notice("CPU%u: shutdown\n", cpu);
-
-	/*
-	 * Now that the dying CPU is beyond the point of no return w.r.t.
-	 * in-kernel synchronisation, try to get the firwmare to help us to
-	 * verify that it has really left the kernel before we consider
-	 * clobbering anything it might still be using.
-	 */
-	if (!op_cpu_kill(cpu))
-		pr_warn("CPU%d may not have shut down cleanly\n", cpu);
 }
 
 /*
