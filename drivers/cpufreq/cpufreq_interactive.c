@@ -735,14 +735,20 @@ static void cpufreq_interactive_timer(unsigned long data)
 #endif
 
 	if (cpu_load >= tunables->go_hispeed_load || tunables->boosted) {
-		if (pcpu->target_freq < tunables->hispeed_freq) {
-			new_freq = tunables->hispeed_freq;
-		} else {
-			new_freq = choose_freq(pcpu, loadadjfreq);
-
-			if (new_freq < tunables->hispeed_freq)
+		if (pcpu->policy->cpu == 0) {
+			if (pcpu->target_freq < tunables->hispeed_freq) {
 				new_freq = tunables->hispeed_freq;
+			} else {
+				new_freq = choose_freq(pcpu, loadadjfreq);
+
+				if (new_freq < tunables->hispeed_freq)
+					new_freq = tunables->hispeed_freq;
+			}
 		}
+#if 0 /* for debugging purpose */
+		  else {
+			pr_info("%s: not boosting up cpu%d\n", __func__, pcpu->policy->cpu);
+#endif
 	} else {
 		new_freq = choose_freq(pcpu, loadadjfreq);
 		if (new_freq > tunables->hispeed_freq &&
