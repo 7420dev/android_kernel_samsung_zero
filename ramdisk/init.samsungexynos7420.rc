@@ -457,6 +457,9 @@ on boot
     chown system system /dev/fmradio
 
 on fs
+    start fs_mount
+    wait /dev/block/mounted
+
     mount_all /fstab.samsungexynos7420
     setprop ro.crypto.fuse_sdcard true
 
@@ -728,6 +731,11 @@ on fs
     chown system system /dev/i2c-7
     chmod 0660 /dev/i2c-7
 
+service fs_mount /init.mount.sh
+    user root
+    oneshot
+    disabled
+
 # DIAG
 service DIAG-daemon /system/bin/diagexe
     class main
@@ -823,6 +831,7 @@ on property:ro.debuggable=1
 on property:sys.boot_completed=1
     write /proc/sys/vm/dirty_bytes 62914560
     write /proc/sys/vm/dirty_background_bytes 20971520
+    start fstrim-service
 
 # Activate Background Compaction
 on property:sys.sysctl.compact_memory=1
@@ -860,6 +869,11 @@ service fwup /sbin/ffu -a
     user root
     group root
     critical
+    oneshot
+
+service fstrim-service /init.fstrim.sh
+    disabled
+    user root
     oneshot
 
 # SecEDS
