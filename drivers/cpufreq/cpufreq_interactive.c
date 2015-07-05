@@ -744,7 +744,8 @@ static void cpufreq_interactive_timer(unsigned long data)
 #endif
 
 	if (cpu_load >= tunables->go_hispeed_load || tunables->boosted) {
-		if (pcpu->policy->cpu == 0) {
+		if (pcpu->policy->cpu == 0 ||
+		    pcpu->policy->cpu == 4) {
 			if (pcpu->target_freq < tunables->hispeed_freq) {
 				new_freq = tunables->hispeed_freq;
 			} else {
