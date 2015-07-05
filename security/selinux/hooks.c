@@ -466,6 +466,7 @@ static int sb_finish_set_opts(struct super_block *sb)
 	    !strcmp(sb->s_type->name, "pstore") ||
 	    !strcmp(sb->s_type->name, "debugfs") ||
 	    !strcmp(sb->s_type->name, "rootfs"))
+		sbsec->flags |= SE_SBLABELSUPP;
 
 	/* Special handling for f2fs */
 	if (strncmp(sb->s_type->name, "f2fs", sizeof("f2fs")) == 0)
