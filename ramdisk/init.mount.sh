@@ -6,8 +6,8 @@ export ext4=1
 mount -t ext4 -o ro,noatime,nodiratime,noauto_da_alloc,discard,data=ordered,errors=panic /dev/block/platform/15570000.ufs/by-name/SYSTEM /system
 mount -t f2fs -o ro,noatime,nodiratime,background_gc=off,discard /dev/block/platform/15570000.ufs/by-name/SYSTEM /system
 
-mount -t ext4 -o noatime,nodiratime,nosuid,nodev,noauto_da_alloc,discard,data=writeback,barrier=0,errors=panic /dev/block/platform/15570000.ufs/by-name/USERDATA /arter97/data || export ext4=0
-mount -t f2fs -o noatime,nodiratime,nosuid,nodev,background_gc=on,discard,nobarrier /dev/block/platform/15570000.ufs/by-name/USERDATA /arter97/data
+mount -t ext4 -o noatime,nodiratime,nosuid,nodev,noauto_da_alloc,discard,data=ordered,errors=panic /dev/block/platform/15570000.ufs/by-name/USERDATA /arter97/data || export ext4=0
+mount -t f2fs -o noatime,nodiratime,nosuid,nodev,background_gc=on,discard /dev/block/platform/15570000.ufs/by-name/USERDATA /arter97/data
 
 if [ -f /arter97/data/.arter97/btaltrom ] ; then
 	export ext4=0
@@ -43,7 +43,7 @@ else
 fi
 
 if [[ $ext4 == "1" ]]; then
-	sed -i -e 's@# USERDATA@/dev/block/platform/15570000.ufs/by-name/USERDATA	/data	ext4	noatime,nosuid,nodev,noauto_da_alloc,discard,journal_async_commit,data=writeback,barrier=0,errors=panic	wait,check,encryptable=footer@g' /fstab.samsungexynos7420
+	sed -i -e 's@# USERDATA@/dev/block/platform/15570000.ufs/by-name/USERDATA	/data	ext4	noatime,nosuid,nodev,noauto_da_alloc,discard,journal_async_commit,data=ordered,errors=panic	wait,check,encryptable=footer@g' /fstab.samsungexynos7420
 	umount -f /data
 	umount -f /arter97/data
 fi
