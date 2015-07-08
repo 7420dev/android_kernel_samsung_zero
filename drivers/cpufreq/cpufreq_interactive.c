@@ -616,9 +616,6 @@ static void set_new_param_set(unsigned int index,
 {
 	unsigned long flags;
 
-	if (suspended)
-		return;
-
 	tunables->hispeed_freq = tunables->hispeed_freq_set[index];
 	tunables->go_hispeed_load = tunables->go_hispeed_load_set[index];
 	tunables->min_sample_time = tunables->min_sample_time_set[index];
@@ -2786,15 +2783,9 @@ static void interactive_early_suspend(struct power_suspend *handler)
 
 	suspended = true;
 
-	for_each_possible_cpu(i) {
+	for_each_online_cpu(i) {
 		pcpu = &per_cpu(cpuinfo, i);
-		if (!pcpu)
-			return;
-
 		tunables = pcpu->policy->governor_data;
-		if (!tunables)
-			return;
-
 		tunables->go_hispeed_load = DEFAULT_GO_HISPEED_LOAD_SCREEN_OFF;
 	}
 	return;
@@ -2808,15 +2799,9 @@ static void interactive_late_resume(struct power_suspend *handler)
 
 	suspended = false;
 
-	for_each_possible_cpu(i) {
+	for_each_online_cpu(i) {
 		pcpu = &per_cpu(cpuinfo, i);
-		if (!pcpu)
-			return;
-
 		tunables = pcpu->policy->governor_data;
-		if (!tunables)
-			return;
-
 		tunables->go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 	}
 	return;
