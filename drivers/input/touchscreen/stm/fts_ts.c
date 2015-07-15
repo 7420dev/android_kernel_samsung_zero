@@ -1447,7 +1447,7 @@ static int fts_irq_enable(struct fts_ts_info *info,
 		info->irq_enabled = true;
 	} else {
 		if (info->irq_enabled) {
-			disable_irq(info->irq);
+			disable_irq_nosync(info->irq);
 			free_irq(info->irq, info);
 			info->irq_enabled = false;
 		}
@@ -2557,7 +2557,7 @@ static int fts_stop_device(struct fts_ts_info *info)
 #endif
 	} else {
 		fts_interrupt_set(info, INT_DISABLE);
-		disable_irq(info->irq);
+		disable_irq_nosync(info->irq);
 
 		fts_command(info, FLUSHBUFFER);
 		fts_command(info, SLEEPIN);
@@ -2604,7 +2604,7 @@ static int fts_start_device(struct fts_ts_info *info)
 		if (info->touch_stopped)
 			goto tsp_power_on;
 
-		disable_irq(info->irq);
+		disable_irq_nosync(info->irq);
 
 		info->reinit_done = false;
 		fts_reinit(info);
