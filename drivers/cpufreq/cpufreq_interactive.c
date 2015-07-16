@@ -89,9 +89,6 @@ static spinlock_t regionchange_cpumask_lock;
 /* boolean for determining screen on/off state */
 static bool suspended = false;
 
-/* Go to hi speed when CPU load at or above this value on screen-off state */
-#define DEFAULT_GO_HISPEED_LOAD_SCREEN_OFF 110
-
 /* Target load.  Lower values result in higher CPU speeds. */
 #define DEFAULT_TARGET_LOAD 90
 static unsigned int default_target_loads[] = {DEFAULT_TARGET_LOAD};
