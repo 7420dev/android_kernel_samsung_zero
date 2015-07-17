@@ -2571,7 +2571,7 @@ static int fts_stop_device(struct fts_ts_info *info)
 			fts_command(info, FTS_CMD_LOWPOWER_MODE); //FIXME
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-		if (dt2w_switch)
+		if (dt2w_switch || (!dt2w_switch && device_may_wakeup(&info->client->dev)))
 #else
 		if (device_may_wakeup(&info->client->dev))
 #endif
@@ -2649,7 +2649,7 @@ static int fts_start_device(struct fts_ts_info *info)
 		enable_irq(info->irq);
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-		if (dt2w_switch)
+		if (dt2w_switch || (!dt2w_switch && device_may_wakeup(&info->client->dev)))
 #else
 		if (device_may_wakeup(&info->client->dev))
 #endif
