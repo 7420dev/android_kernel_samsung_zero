@@ -198,7 +198,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 #ARCH		?= $(SUBARCH)
 #CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
 ARCH		?= arm64
-CROSS_COMPILE	?= /home/arter97/linaro-64/bin/aarch64-linux-android-
+CROSS_COMPILE	?= /home/arter97/gcc-5.2-64/bin/aarch64-none-elf-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -393,7 +393,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -std=gnu89
 
 # arter97's optimizations
-KBUILD_CFLAGS	+= -pipe -fno-pic -O2 -mcpu=cortex-a57.cortex-a53 -mtune=cortex-a57.cortex-a53
+KBUILD_CFLAGS	+= -pipe -fno-pic -O2 -march=armv8-a+crc -mcpu=cortex-a57.cortex-a53 -mtune=cortex-a57.cortex-a53
 # Other unnecessary warnings
 KBUILD_CFLAGS	+= -Wno-unused -Wno-maybe-uninitialized
 
