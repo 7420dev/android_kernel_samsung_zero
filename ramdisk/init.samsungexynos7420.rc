@@ -927,11 +927,10 @@ on property:sys.mobicoredaemon.enable=true
     start cs_service
 
 # SSWAP
-service swapon /sbin/sswap -s -f 1280
+service swapon /sbin/sswap
     class core
     user root
     group root
-    seclabel u:r:sswap:s0
     oneshot
 
 # IPSec for VOLTE
