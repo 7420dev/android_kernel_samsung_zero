@@ -731,11 +731,6 @@ on fs
     chown system system /dev/i2c-7
     chmod 0660 /dev/i2c-7
 
-service fs_mount /init.mount.sh
-    user root
-    oneshot
-    disabled
-
 # DIAG
 service DIAG-daemon /system/bin/diagexe
     class main
@@ -854,9 +849,8 @@ on property:ro.use_data_netmgrd=true
 
 # LPM
 on property:ro.bootmode=charger
-    mount ext4 /dev/block/platform/15570000.ufs/by-name/SYSTEM /system support_scfs wait ro
-
-on property:ro.bootmode=charger
+    start fs_mount
+    wait /dev/block/mounted
     class_start sec-charger
 
 service lpm /system/bin/lpm
@@ -870,6 +864,11 @@ service fwup /sbin/ffu -a
     group root
     critical
     oneshot
+
+service fs_mount /init.mount.sh
+    user root
+    oneshot
+    disabled
 
 service fstrim-service /init.fstrim.sh
     disabled
