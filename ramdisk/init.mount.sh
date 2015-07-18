@@ -3,8 +3,8 @@
 export PATH=/res/asset:$PATH
 export ext4=1
 
-mount -t ext4 -o ro,noatime,nodiratime,noauto_da_alloc,discard,data=ordered,errors=panic /dev/block/platform/15570000.ufs/by-name/SYSTEM /system
-mount -t f2fs -o ro,noatime,nodiratime,background_gc=off,discard /dev/block/platform/15570000.ufs/by-name/SYSTEM /system
+mount -t ext4 -o ro,noatime,nodiratime,noauto_da_alloc,nodiscard,data=ordered,errors=panic /dev/block/platform/15570000.ufs/by-name/SYSTEM /system
+mount -t f2fs -o ro,noatime,nodiratime,background_gc=off,nodiscard /dev/block/platform/15570000.ufs/by-name/SYSTEM /system
 
 mount -t ext4 -o noatime,nodiratime,nosuid,nodev,noauto_da_alloc,discard,data=ordered,errors=panic /dev/block/platform/15570000.ufs/by-name/USERDATA /arter97/data || export ext4=0
 mount -t f2fs -o noatime,nodiratime,nosuid,nodev,background_gc=on,discard /dev/block/platform/15570000.ufs/by-name/USERDATA /arter97/data
@@ -49,3 +49,10 @@ if [[ $ext4 == "1" ]]; then
 fi
 
 touch /dev/block/mounted
+
+if [ -e /system/swapfile ]; then
+	mount -o rw,remount /system
+	fstrim -v /system
+	mkswap /system/swapfile
+	swapon -d[once] -p 5 /system/swapfile
+fi
