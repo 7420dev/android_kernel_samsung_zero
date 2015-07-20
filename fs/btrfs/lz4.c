@@ -104,7 +104,7 @@
 #define restrict // Disable restrict
 #endif
 
-#define GCC_VERSION (__GNUC__ * 100 + __GNUC_MINOR__)
+#include <linux/compiler.h>
 
 #ifdef _MSC_VER  // Visual Studio
 #define inline __forceinline // Visual is not C99, but supports some kind of inline
