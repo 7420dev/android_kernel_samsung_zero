@@ -1584,26 +1584,26 @@ static inline void __update_group_entity_contrib(struct sched_entity *se) {}
  * tweaking suit particular needs.
  */
 
-unsigned int hmp_up_threshold = 479;
-unsigned int hmp_down_threshold = 214;
+static unsigned int hmp_up_threshold = 479;
+static unsigned int hmp_down_threshold = 214;
 
-unsigned int hmp_semiboost_up_threshold = 479;
-unsigned int hmp_semiboost_down_threshold = 150;
+static unsigned int hmp_semiboost_up_threshold = 479;
+static unsigned int hmp_semiboost_down_threshold = 150;
 
 /* Global switch between power-aware migrations and classical GTS. */
-unsigned int hmp_power_migration = 1;
+static unsigned int hmp_power_migration = 1;
 
 /* Performance threshold for guaranteeing an up migration. */
-unsigned int hmp_up_perf_threshold = 597;
+static unsigned int hmp_up_perf_threshold = 597;
 
 /* Capacity floor for checking cluster perf and efficiency. */
-unsigned int hmp_up_power_threshold = 341;
+static unsigned int hmp_up_power_threshold = 341;
 
 /*
  * Maximum total capacity difference in percentage to enact scheduler power migration.
  */
-unsigned int hmp_up_perf_hysteresis = 5;
-unsigned int hmp_down_perf_hysteresis = 10;
+static unsigned int hmp_up_perf_hysteresis = 5;
+static unsigned int hmp_down_perf_hysteresis = 10;
 
 #define NUM_CLUSTERS	2
 
