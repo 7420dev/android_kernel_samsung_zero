@@ -1,8 +1,6 @@
 #
 # ADDITIONAL_DEFAULT_PROPERTIES
 #
-persist.cne.feature=0
-persist.security.ams.enforcing=0
 ro.secure=0
 ro.allow.mock.location=0
 ro.debuggable=1
@@ -15,5 +13,18 @@ dalvik.vm.dex2oat-Xmx=512m
 dalvik.vm.image-dex2oat-Xms=64m
 dalvik.vm.image-dex2oat-Xmx=64m
 ro.dalvik.vm.native.bridge=0
-ro.securestorage.support=false
+
+# SELinux & Knox related
+persist.cne.feature=0
+persist.security.ams.enforcing=0
 androidboot.selinux=0
+ro.securestorage.knox=false
+ro.securestorage.support=false
+ro.config.timaversion=0
+ro.config.tima=0
+ro.config.knox=0
+ro.security.mdpp.ux=Disabled
+
+# Memory managements
+ro.config.dha_lmk_scale=1
+ro.config.fha_enable=true
