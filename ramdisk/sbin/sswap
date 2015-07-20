@@ -2,7 +2,7 @@
 
 export PATH=/res/asset:$PATH
 
-SWAPSIZE=2048
+SWAPSIZE=1280
 PRIORITY=10
 
 if cat /proc/swaps | grep -q vnswap0 ; then
