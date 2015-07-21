@@ -66,6 +66,9 @@ static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
 	if (f2fs_may_inline_dentry(inode))
 		set_inode_flag(F2FS_I(inode), FI_INLINE_DENTRY);
 
+	f2fs_init_extent_tree(inode, NULL);
+
+	stat_inc_inline_xattr(inode);
 	stat_inc_inline_inode(inode);
 	stat_inc_inline_dir(inode);
 
@@ -79,9 +82,9 @@ out:
 fail:
 	trace_f2fs_new_inode(inode, err);
 	make_bad_inode(inode);
-	iput(inode);
 	if (nid_free)
-		alloc_nid_failed(sbi, ino);
+		set_inode_flag(F2FS_I(inode), FI_FREE_NID);
+	iput(inode);
 	return ERR_PTR(err);
 }
 
@@ -90,7 +93,14 @@ static int is_multimedia_file(const unsigned char *s, const char *sub)
 	size_t slen = strlen(s);
 	size_t sublen = strlen(sub);
 
-	if (sublen > slen)
+	/*
+	 * filename format of multimedia file should be defined as:
+	 * "filename + '.' + extension".
+	 */
+	if (slen < sublen + 2)
+		return 0;
+
+	if (s[slen - sublen - 1] != '.')
 		return 0;
 
 	return !strncasecmp(s + slen - sublen, sub, sublen);
@@ -647,7 +657,8 @@ out:
 }
 
 #ifdef CONFIG_F2FS_FS_ENCRYPTION
-static const char *f2fs_encrypted_follow_link(struct dentry *dentry, void **cookie)
+static void *f2fs_encrypted_follow_link(struct dentry *dentry,
+						struct nameidata *nd)
 {
 	struct page *cpage = NULL;
 	char *caddr, *paddr = NULL;
@@ -665,7 +676,7 @@ static const char *f2fs_encrypted_follow_link(struct dentry *dentry, void **cook
 
 	cpage = read_mapping_page(inode->i_mapping, 0, NULL);
 	if (IS_ERR(cpage))
-		return ERR_CAST(cpage);
+		return cpage;
 	caddr = kmap(cpage);
 	caddr[size] = 0;
 
@@ -698,10 +709,11 @@ static const char *f2fs_encrypted_follow_link(struct dentry *dentry, void **cook
 
 	/* Null-terminate the name */
 	paddr[res] = '\0';
+	nd_set_link(nd, paddr);
 
 	kunmap(cpage);
 	page_cache_release(cpage);
-	return *cookie = paddr;
+	return NULL;
 errout:
 	f2fs_fname_crypto_free_buffer(&pstr);
 	kunmap(cpage);
