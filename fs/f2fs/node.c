@@ -328,11 +328,11 @@ static void set_node_addr(struct f2fs_sb_info *sbi, struct node_info *ni,
 int try_to_free_nats(struct f2fs_sb_info *sbi, int nr_shrink)
 {
 	struct f2fs_nm_info *nm_i = NM_I(sbi);
-	int nr = nr_shrink;
 
-	if (!down_write_trylock(&nm_i->nat_tree_lock))
+	if (available_free_memory(sbi, NAT_ENTRIES))
 		return 0;
 
+	down_write(&nm_i->nat_tree_lock);
 	while (nr_shrink && !list_empty(&nm_i->nat_entries)) {
 		struct nat_entry *ne;
 		ne = list_first_entry(&nm_i->nat_entries,
@@ -341,7 +341,7 @@ int try_to_free_nats(struct f2fs_sb_info *sbi, int nr_shrink)
 		nr_shrink--;
 	}
 	up_write(&nm_i->nat_tree_lock);
-	return nr - nr_shrink;
+	return nr_shrink;
 }
 
 /*
@@ -991,7 +991,8 @@ fail:
 /*
  * Caller should do after getting the following values.
  * 0: f2fs_put_page(page, 0)
- * LOCKED_PAGE or error: f2fs_put_page(page, 1)
+ * LOCKED_PAGE: f2fs_put_page(page, 1)
+ * error: nothing
  */
 static int read_node_page(struct page *page, int rw)
 {
@@ -1009,6 +1010,7 @@ static int read_node_page(struct page *page, int rw)
 
 	if (unlikely(ni.blk_addr == NULL_ADDR)) {
 		ClearPageUptodate(page);
+		f2fs_put_page(page, 1);
 		return -ENOENT;
 	}
 
@@ -1039,7 +1041,10 @@ void ra_node_page(struct f2fs_sb_info *sbi, nid_t nid)
 		return;
 
 	err = read_node_page(apage, READA);
-	f2fs_put_page(apage, err ? 1 : 0);
+	if (err == 0)
+		f2fs_put_page(apage, 0);
+	else if (err == LOCKED_PAGE)
+		f2fs_put_page(apage, 1);
 }
 
 struct page *get_node_page(struct f2fs_sb_info *sbi, pgoff_t nid)
@@ -1052,12 +1057,10 @@ repeat:
 		return ERR_PTR(-ENOMEM);
 
 	err = read_node_page(page, READ_SYNC);
-	if (err < 0) {
-		f2fs_put_page(page, 1);
+	if (err < 0)
 		return ERR_PTR(err);
-	} else if (err != LOCKED_PAGE) {
+	else if (err != LOCKED_PAGE)
 		lock_page(page);
-	}
 
 	if (unlikely(!PageUptodate(page) || nid != nid_of_node(page))) {
 		ClearPageUptodate(page);
@@ -1094,12 +1097,10 @@ repeat:
 		return ERR_PTR(-ENOMEM);
 
 	err = read_node_page(page, READ_SYNC);
-	if (err < 0) {
-		f2fs_put_page(page, 1);
+	if (err < 0)
 		return ERR_PTR(err);
-	} else if (err == LOCKED_PAGE) {
+	else if (err == LOCKED_PAGE)
 		goto page_hit;
-	}
 
 	blk_start_plug(&plug);
 
