@@ -48,6 +48,7 @@ modules.builtin
 /fips_fmp_utils
 /*.img
 !/dtb.img
+/*.zip
 
 #
 # Debian directory (make deb-pkg)

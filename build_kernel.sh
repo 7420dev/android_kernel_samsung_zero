@@ -46,7 +46,7 @@ echo "Making new boot image"
 gcc -w -s -pipe -O2 -Itools/libmincrypt -o tools/mkbootimg/mkbootimg tools/libmincrypt/*.c tools/mkbootimg/mkbootimg.c
 tools/mkbootimg/mkbootimg --kernel $KERNELDIR/arch/arm64/boot/Image --dt $KERNELDIR/dtb.img --ramdisk $RAMFS_TMP.cpio.lzo --base 0x10000000 --pagesize 2048 --ramdisk_offset 0x01000000 --tags_offset 0x00000100 --second_offset 0x00f00000 -o $KERNELDIR/boot.img
 echo -n "SEANDROIDENFORCE" >> boot.img
-if [ "${1}" = "CC=\$(CROSS_COMPILE)gcc" ] ; then
+if echo "$@" | grep -q "CC=\$(CROSS_COMPILE)gcc" ; then
 	dd if=/dev/zero bs=$((29360128-$(stat -c %s boot.img))) count=1 >> boot.img
 fi
 

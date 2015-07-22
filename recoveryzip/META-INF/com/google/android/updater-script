@@ -1,0 +1,41 @@
+ui_print("");
+ui_print("");
+ui_print(" ###################### ");
+ui_print("  PhilZ Touch Recovery  ");
+ui_print("  Full Touch CWM Based  ");
+ui_print("            +           ");
+ui_print("   Advanced  Features   ");
+ui_print("      Phone  Galaxy S6  ");
+ui_print("            +           ");
+ui_print("      f2fs support      ");
+ui_print("       by arter97       ");
+ui_print(" ###################### ");
+ui_print("");
+ui_print("");
+show_progress(1.000000, 0);
+
+ui_print("Flashing Recovery...");
+set_progress(0.100000);
+package_extract_file("recovery.img", "/dev/block/platform/15570000.ufs/by-name/RECOVERY");
+
+set_progress(1.000000);
+show_progress(1.000000, 0);
+
+ui_print("");
+ui_print(" ###################### ");
+ui_print("  PhilZ Touch Recovery  ");
+ui_print("  Full Touch CWM Based  ");
+ui_print("            +           ");
+ui_print("   Advanced  Features   ");
+ui_print("     PHILZ_VERSION  CWM_VERSION   ");
+ui_print("      Phone  Galaxy S6  ");
+ui_print("            +           ");
+ui_print("      f2fs support      ");
+ui_print("       by arter97       ");
+ui_print(" ###################### ");
+
+ui_print("");
+ui_print("Brought to you by * Phil3759 *");
+ui_print("http://forum.xda-developers.com/showthread.php?t=2201860");
+ui_print("Done, please reboot recovery...");
+run_program("/sbin/sync");
