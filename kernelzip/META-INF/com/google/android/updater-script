@@ -7,6 +7,16 @@ run_program("/sbin/mount", "/data");
 ui_print(" - flashing boot.img");
 package_extract_file("boot.img", "/dev/block/platform/15570000.ufs/by-name/BOOT");
 
+ui_print(" - installing updated system files");
+package_extract_dir("system", "/system");
+set_metadata("/system/bin/linker",    "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/linker64",  "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/oatdump",   "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:system_file:s0");
+set_metadata("/system/bin/dex2oat",   "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:dex2oat_exec:s0");
+set_metadata("/system/bin/hostapd",   "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:hostapd_exec:s0");
+set_metadata("/system/bin/macloader", "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:macloader_exec:s0");
+set_metadata("/system/bin/patchoat",  "uid", 0, "gid", 2000, "mode", 0755, "capabilities", 0x0, "selabel", "u:object_r:dex2oat_exec:s0");
+
 ui_print(" - tuning file systems");
 run_program("/sbin/fstrim", "-v", "/system");
 run_program("/sbin/fstrim", "-v", "/data");
