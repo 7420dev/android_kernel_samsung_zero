@@ -396,6 +396,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 KBUILD_CFLAGS	+= -pipe -fno-pic -O2 -march=armv8-a+crc -mcpu=cortex-a57.cortex-a53 -mtune=cortex-a57.cortex-a53
 # Other unnecessary warnings
 KBUILD_CFLAGS	+= -Wno-unused -Wno-maybe-uninitialized
+# AArch64 erratum fixes
+KBUILD_CFLAGS	+= -mfix-cortex-a53-835769 -mfix-cortex-a53-843419 -Wl,--fix-cortex-a53-835769 -Wl,--fix-cortex-a53-843419
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
@@ -725,6 +727,8 @@ LDFLAGS_vmlinux += $(LDFLAGS_BUILD_ID)
 ifeq ($(CONFIG_STRIP_ASM_SYMS),y)
 LDFLAGS_vmlinux	+= $(call ld-option, -X,)
 endif
+
+LDFLAGS_vmlinux += --fix-cortex-a53-835769 --fix-cortex-a53-843419
 
 # Default kernel image to build when no specific target is given.
 # KBUILD_IMAGE may be overruled on the command line or
