@@ -859,6 +859,11 @@ on property:sys.powerctl=*
 on property:sys.sysctl.extra_free_kbytes=*
     write /proc/sys/vm/extra_free_kbytes ${sys.sysctl.extra_free_kbytes}
 
+# Activate Background Compaction
+on property:sys.sysctl.compact_memory=1
+    write /proc/sys/vm/compact_memory 1
+    setprop sys.sysctl.compact_memory=0
+
 # "tcp_default_init_rwnd" Is too long!
 on property:sys.sysctl.tcp_def_init_rwnd=*
     write /proc/sys/net/ipv4/tcp_default_init_rwnd ${sys.sysctl.tcp_def_init_rwnd}
