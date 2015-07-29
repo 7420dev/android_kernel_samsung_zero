@@ -870,6 +870,7 @@ on property:sys.sysctl.tcp_def_init_rwnd=*
 
 
 on property:init.svc.bootanim=stopped
+    write /proc/sys/vm/compact_memory 1
     start auditd
 
 # Reload SE Android Policy for MDM
