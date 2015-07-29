@@ -1129,16 +1129,11 @@ static int exynos_ufs_link_startup_notify(struct ufs_hba *hba, bool notify)
 {
 	int ret = 0;
 
-	switch (notify) {
-	case PRE_CHANGE:
+	if (notify == PRE_CHANGE) {
 		exynos_ufs_dev_hw_reset(hba);
 		ret = exynos_ufs_pre_link(hba);
-		break;
-	case POST_CHANGE:
+	} else if (notify == POST_CHANGE) {
 		ret = exynos_ufs_post_link(hba);
-		break;
-	default:
-		break;
 	}
 
 	return ret;
@@ -1150,15 +1145,10 @@ static int exynos_ufs_pwr_change_notify(struct ufs_hba *hba, bool notify,
 {
 	int ret = 0;
 
-	switch (notify) {
-	case PRE_CHANGE:
+	if (notify == PRE_CHANGE) {
 		ret = exynos_ufs_pre_prep_pmc(hba, pwr_max, pwr_req);
-		break;
-	case POST_CHANGE:
+	} else if (notify == POST_CHANGE) {
 		ret = exynos_ufs_post_prep_pmc(hba, NULL, pwr_req);
-		break;
-	default:
-		break;
 	}
 
 	return ret;
@@ -1167,15 +1157,10 @@ static int exynos_ufs_pwr_change_notify(struct ufs_hba *hba, bool notify,
 static void exynos_ufs_hibern8_notify(struct ufs_hba *hba,
 				u8 enter, bool notify)
 {
-	switch (notify) {
-	case PRE_CHANGE:
+	if (notify == PRE_CHANGE) {
 		exynos_ufs_pre_hibern8(hba, enter);
-		break;
-	case POST_CHANGE:
+	} else if (notify == POST_CHANGE) {
 		exynos_ufs_post_hibern8(hba, enter);
-		break;
-	default:
-		break;
 	}
 }
 
