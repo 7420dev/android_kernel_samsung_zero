@@ -829,11 +829,6 @@ on property:sys.boot_completed=1
     write /proc/sys/vm/dirty_background_bytes 20971520
     start fstrim-service
 
-# Activate Background Compaction
-on property:sys.sysctl.compact_memory=1
-    write /proc/sys/vm/compact_memory 1
-    setprop sys.sysctl.compact_memory=0
-
 #
 # start netmgrd
 #
