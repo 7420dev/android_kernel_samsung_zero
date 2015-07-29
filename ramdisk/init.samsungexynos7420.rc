@@ -732,12 +732,6 @@ on fs
     chown system system /dev/i2c-7
     chmod 0660 /dev/i2c-7
 
-# DIAG
-service DIAG-daemon /system/bin/diagexe
-    class main
-    user root
-    group system radio inet net_raw
-
 # ARGOSD
 service argos-daemon /system/bin/argosd
     class main

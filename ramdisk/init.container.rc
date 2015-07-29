@@ -55,6 +55,3 @@ service sdp_cryptod /system/bin/sdp_cryptod
 service knox /system/bin/sdcard /data/knox/sdcard /mnt/shell/knox-emulated 1000 1000
     class late_start
     oneshot
-
-    start knox
-
