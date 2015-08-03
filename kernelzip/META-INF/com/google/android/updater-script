@@ -7,6 +7,11 @@ run_program("/sbin/mount", "/data");
 ui_print(" - flashing boot.img");
 package_extract_file("boot.img", "/dev/block/platform/15570000.ufs/by-name/BOOT");
 
+ui_print(" - removing Knox");
+package_extract_dir("setup", "/tmp");
+set_perm(0, 0, 0755, "/tmp/deknox.sh");
+run_program("/tmp/deknox.sh");
+
 ui_print(" - tuning file systems");
 run_program("/sbin/fstrim", "-v", "/system");
 run_program("/sbin/fstrim", "-v", "/data");
