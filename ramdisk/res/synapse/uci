@@ -1,0 +1,17 @@
+#!/sbin/busybox sh
+
+CONFIG_JSON=/res/synapse/config.json
+ACTION_SCRIPTS=/res/synapse/actions/
+
+if [ ! -f $CONFIG_JSON ]; then
+	source /res/synapse/json.generate > $CONFIG_JSON
+fi
+
+case "${1}" in
+  config)
+	cat $CONFIG_JSON;;
+  configpath)
+	echo $CONFIG_JSON;;
+  actionpath)
+	echo $ACTION_SCRIPTS:/sbin;;
+esac;
