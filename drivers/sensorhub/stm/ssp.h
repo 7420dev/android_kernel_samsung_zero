@@ -448,6 +448,7 @@ struct ssp_data {
 #endif
 	int acc_type;
 	int pressure_type;
+	atomic_t int_gyro_enable;
 };
 
 struct ssp_big {

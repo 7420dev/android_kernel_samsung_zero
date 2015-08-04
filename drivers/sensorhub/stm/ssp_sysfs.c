@@ -273,6 +273,15 @@ static ssize_t set_sensors_enable(struct device *dev,
 
 			if (!(uNewEnable & (1 << uChangedSensor))) {
 				data->reportedData[uChangedSensor] = false;
+
+				/* Intterupt Gyro */
+				if (uChangedSensor == INTERRUPT_GYRO_SENSOR) {
+					if (!atomic_read(&data->int_gyro_enable)) {
+						ssp_infof("skip removing int_gyrosensor");
+						continue;
+					}
+				}
+
 				ssp_remove_sensor(data, uChangedSensor,
 					uNewEnable); /* disable */
 			} else { /* Change to ADD_SENSOR_STATE from KitKat */
@@ -293,6 +302,15 @@ static ssize_t set_sensors_enable(struct device *dev,
 					}
 				}
 				data->aiCheckStatus[uChangedSensor] = ADD_SENSOR_STATE;
+
+				/* Intterupt Gyro */
+				if (uChangedSensor == INTERRUPT_GYRO_SENSOR) {
+					if (!atomic_read(&data->int_gyro_enable)) {
+						ssp_infof("skip enabling int_gyrosensor");
+						continue;
+					}
+				}
+
 				enable_sensor(data, uChangedSensor, data->adDelayBuf[uChangedSensor]);
 			}
 			break;
@@ -317,10 +335,31 @@ static ssize_t set_flush(struct device *dev,
 	if (!(atomic_read(&data->aSensorEnable) & (1 << sensor_type)))
 		return -EINVAL;
 
+	/* Intterupt Gyro */
+	if (sensor_type == INTERRUPT_GYRO_SENSOR) {
+		if (!atomic_read(&data->int_gyro_enable)) {
+			data->aiCheckStatus[INTERRUPT_GYRO_SENSOR]
+				= ADD_SENSOR_STATE;
+			enable_sensor(data, INTERRUPT_GYRO_SENSOR,
+				data->adDelayBuf[INTERRUPT_GYRO_SENSOR]);
+		}
+	}
+
 	if (flush(data, sensor_type) < 0) {
 		ssp_err("ssp returns error for flush(%x)", sensor_type);
 		return -EINVAL;
 	}
+
+	/* Intterupt Gyro */
+	if (sensor_type == INTERRUPT_GYRO_SENSOR) {
+		if (!atomic_read(&data->int_gyro_enable)) {
+			int64_t delay = data->adDelayBuf[INTERRUPT_GYRO_SENSOR];
+			ssp_remove_sensor(data,	INTERRUPT_GYRO_SENSOR,
+					atomic64_read(&data->aSensorEnable));
+			data->adDelayBuf[INTERRUPT_GYRO_SENSOR] = delay;
+		}
+	}
+
 	return size;
 }
 
@@ -628,6 +667,53 @@ static ssize_t set_interrupt_gyro_poll_delay(struct device *dev,
 }
 
 
+static ssize_t show_int_gyro_enable(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct ssp_data *data  = dev_get_drvdata(dev);
+	return snprintf(buf, PAGE_SIZE, "%d,%d\n",
+		atomic_read(&data->int_gyro_enable),
+		atomic_read(&data->aSensorEnable)
+		& (1 << INTERRUPT_GYRO_SENSOR));
+}
+
+static ssize_t set_int_gyro_enable(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct ssp_data *data  = dev_get_drvdata(dev);
+	int64_t buffer;
+	bool int_gyro_enable;
+
+	if (kstrtoll(buf, 10, &buffer) < 0)
+		return -EINVAL;
+
+	if (buffer != 1 && buffer != 0)
+		return -EINVAL;
+
+	int_gyro_enable = (bool)buffer;
+
+	if (atomic_read(&data->int_gyro_enable) == int_gyro_enable)
+		return size;
+
+	if (atomic_read(&data->aSensorEnable)
+			& (1 << INTERRUPT_GYRO_SENSOR)) {
+		if (int_gyro_enable) {
+			data->aiCheckStatus[INTERRUPT_GYRO_SENSOR]
+				= ADD_SENSOR_STATE;
+			enable_sensor(data, INTERRUPT_GYRO_SENSOR,
+				data->adDelayBuf[INTERRUPT_GYRO_SENSOR]);
+		} else {
+			int64_t delay = data->adDelayBuf[INTERRUPT_GYRO_SENSOR];
+			ssp_remove_sensor(data,	INTERRUPT_GYRO_SENSOR,
+					atomic_read(&data->aSensorEnable));
+			data->adDelayBuf[INTERRUPT_GYRO_SENSOR] = delay;
+		}
+	}
+
+	atomic_set(&data->int_gyro_enable, int_gyro_enable);
+	return size;
+}
+
 static DEVICE_ATTR(mcu_rev, S_IRUGO, mcu_revision_show, NULL);
 static DEVICE_ATTR(mcu_name, S_IRUGO, mcu_model_name_show, NULL);
 static DEVICE_ATTR(mcu_update, S_IRUGO, mcu_update_kernel_bin_show, NULL);
@@ -680,6 +766,8 @@ static DEVICE_ATTR(interrupt_gyro_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_interrupt_gyro_poll_delay, set_interrupt_gyro_poll_delay);
 static DEVICE_ATTR(ssp_flush, S_IWUSR | S_IWGRP,
 	NULL, set_flush);
+static DEVICE_ATTR(int_gyro_enable, S_IRUGO | S_IWUSR | S_IWGRP,
+	show_int_gyro_enable, set_int_gyro_enable);
 
 static struct device_attribute *mcu_attrs[] = {
 	&dev_attr_enable,
@@ -711,6 +799,7 @@ static struct device_attribute *mcu_attrs[] = {
 	&dev_attr_step_cnt_poll_delay,
 	&dev_attr_interrupt_gyro_poll_delay,
 	&dev_attr_ssp_flush,
+	&dev_attr_int_gyro_enable,
 	NULL,
 };
 

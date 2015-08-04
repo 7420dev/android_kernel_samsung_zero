@@ -667,6 +667,8 @@ struct ssp_data {
 	u32 glass_type;
 #endif
 	int acc_type;
+
+	atomic_t int_gyro_enable;
 };
 
 struct ssp_big {
