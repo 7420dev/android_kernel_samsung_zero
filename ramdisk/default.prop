@@ -24,6 +24,7 @@ ro.config.timaversion=0
 ro.config.tima=0
 ro.config.knox=0
 ro.security.mdpp.ux=Disabled
+wlan.wfd.hdcp=disable
 
 # Memory managements
 ro.config.dha_lmk_scale=1
