@@ -2,12 +2,20 @@
 
 OUTFD=$2
 ZIP=$3
-CURDIR=$(pwd)
 
 ui_print() {
   echo -n -e "ui_print $1\n" > /proc/self/fd/$OUTFD
   echo -n -e "ui_print\n" > /proc/self/fd/$OUTFD
 }
+
+cd /tmp
+rm -rf arter97
+mkdir arter97
+cd arter97
+unzip -o $ZIP
+chmod 755 busybox
+cat busybox.list | while read file; do ln -s busybox $file; done
+export PATH=/tmp/arter97:$PATH
 
 ui_print " ";
 ui_print " - mounting system partition"
@@ -17,7 +25,7 @@ ui_print " - mounting data partition"
 mount /data
 
 ui_print " - flashing boot.img"
-unzip -p $ZIP boot.img > /dev/block/platform/15570000.ufs/by-name/BOOT 2>/dev/null
+cat boot.img > /dev/block/platform/15570000.ufs/by-name/BOOT
 
 ui_print " - removing Knox"
 cd /system
@@ -47,15 +55,13 @@ sed -i -e '/ro.config.timaversion/d' build.prop
 sed -i -e '/ro.config.tima/c\ro.config.tima=0' build.prop
 sed -i -e '/ro.config.knox/c\ro.config.knox=0' build.prop
 
-cd $CURDIR
-
 if [ ! -e /system/swapfile ]; then
 	ui_print " - creating /system/swapfile"
-	FREE=$(busybox df -k /system | busybox grep "/system" | busybox awk '{print $3}')
+	FREE=$(df -k /system | grep "/system" | awk '{print $3}')
 	SWAPSIZE=$((($FREE - 102400) / 131072 * 128))
 	if [ "$SWAPSIZE" -ge "1" ]; then
         	ui_print "   creating $SWAPSIZE MB swap"
-	        busybox dd if=/dev/zero of=/system/swapfile bs=1048576 count=$SWAPSIZE > /dev/null 2>&1
+	        dd if=/dev/zero of=/system/swapfile bs=1048576 count=$SWAPSIZE > /dev/null 2>&1
 	else
         	ui_print "   insufficient /system available space!"
 	fi
@@ -74,4 +80,5 @@ umount /system > /dev/null 2>&1
 
 ui_print " "
 ui_print "finished"
+rm -rf /tmp/arter97
 sync
