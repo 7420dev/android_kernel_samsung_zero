@@ -2199,26 +2199,6 @@ void si_swapinfo(struct sysinfo *val)
 	spin_unlock(&swap_lock);
 }
 
-void si_swapinfo_single(struct sysinfo *val, signed short prio)
-{
-	unsigned int type;
-	unsigned long nr_to_be_unused = 0;
-
-	spin_lock(&swap_lock);
-	for (type = 0; type < nr_swapfiles; type++) {
-		struct swap_info_struct *si = swap_info[type];
-
-		if (si->prio == prio) {
-			if ((si->flags & SWP_USED) && !(si->flags & SWP_WRITEOK))
-				nr_to_be_unused += si->inuse_pages;
-		}
-	}
-
-	val->freeswap = atomic_long_read(&nr_swap_pages) + nr_to_be_unused;
-	val->totalswap = total_swap_pages + nr_to_be_unused;
-	spin_unlock(&swap_lock);
-}
-
 /*
  * Verify that a swap entry is valid and increment its swap map count.
  *
