@@ -6,7 +6,7 @@ if [ ! "${1}" = "skip" ] ; then
 fi
 
 if [ -e boot.img ] ; then
-	rm arter97-kernel-"$(cat version)".zip 2>/dev/null
+	rm arter97-kernel-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat version)".zip 2>/dev/null
 	cp boot.img kernelzip/boot.img
 	\ls ramdisk/res/asset > kernelzip/busybox.list
 	cp ramdisk/res/busybox kernelzip/
