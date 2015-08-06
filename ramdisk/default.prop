@@ -27,5 +27,5 @@ ro.security.mdpp.ux=Disabled
 wlan.wfd.hdcp=disable
 
 # Memory managements
-ro.config.dha_lmk_scale=1
+ro.config.dha_lmk_scale=0.5
 ro.config.fha_enable=true

@@ -512,6 +512,8 @@ on boot
     chown root system /sys/module/lowmemorykiller/parameters/adj
     chmod 0220 /sys/module/lowmemorykiller/parameters/adj
     chown root system /sys/module/lowmemorykiller/parameters/minfree
+    chmod 0660 /sys/module/lowmemorykiller/parameters/minfree
+    write /sys/module/lowmemorykiller/parameters/minfree 9216,11520,13824,16128,18432,23040
     chmod 0220 /sys/module/lowmemorykiller/parameters/minfree
     # for BT MAC address
     mkdir /efs/bluetooth 0775 radio system
