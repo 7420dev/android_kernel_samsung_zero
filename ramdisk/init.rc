@@ -509,12 +509,14 @@ on boot
     write /proc/sys/vm/overcommit_memory 0
     write /proc/sys/vm/min_free_order_shift 4
     write /proc/sys/vm/vfs_cache_pressure 10000
-    chown root system /sys/module/lowmemorykiller/parameters/adj
+    chown root root /sys/module/lowmemorykiller/parameters/adj
     chmod 0220 /sys/module/lowmemorykiller/parameters/adj
-    chown root system /sys/module/lowmemorykiller/parameters/minfree
+    chown root root /sys/module/lowmemorykiller/parameters/minfree
     chmod 0660 /sys/module/lowmemorykiller/parameters/minfree
     write /sys/module/lowmemorykiller/parameters/minfree 9216,11520,13824,16128,18432,23040
     chmod 0220 /sys/module/lowmemorykiller/parameters/minfree
+    chown root system /sys/module/lowmemorykiller/parameters/nul
+    chmod 0220 /sys/module/lowmemorykiller/parameters/nul
     # for BT MAC address
     mkdir /efs/bluetooth 0775 radio system
     # if already exist
@@ -1000,7 +1002,7 @@ service adbd /sbin/adbd --root_seclabel=u:r:su:s0
 on property:ro.kernel.qemu=1
     start adbd
 
-service lmkd /system/bin/lmkd
+service lmkd /sbin/lmkd
     class core
     critical
     socket lmkd seqpacket 0660 system system
