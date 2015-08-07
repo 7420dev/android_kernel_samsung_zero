@@ -510,6 +510,8 @@ on boot
     write /proc/sys/vm/min_free_order_shift 4
     write /proc/sys/vm/vfs_cache_pressure 10000
     chown root root /sys/module/lowmemorykiller/parameters/adj
+    chmod 0660 /sys/module/lowmemorykiller/parameters/adj
+    write /sys/module/lowmemorykiller/parameters/adj 0,1,2,3,8,16
     chmod 0220 /sys/module/lowmemorykiller/parameters/adj
     chown root root /sys/module/lowmemorykiller/parameters/minfree
     chmod 0660 /sys/module/lowmemorykiller/parameters/minfree
