@@ -1104,6 +1104,8 @@ static struct platform_driver gpio_keys_device_driver = {
 static int __init gpio_keys_init(void)
 {
 	register_power_suspend(&gpio_suspend);
+	wake_lock_init(&sync_wake_lock, WAKE_LOCK_SUSPEND,
+		"sync_wake_lock");
 	return platform_driver_register(&gpio_keys_device_driver);
 }
 
