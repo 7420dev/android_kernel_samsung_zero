@@ -141,6 +141,8 @@ int f2fs_convert_inline_page(struct dnode_of_data *dn, struct page *page)
 	kunmap_atomic(dst_addr);
 	SetPageUptodate(page);
 no_update:
+	set_page_dirty(page);
+
 	/* clear dirty state */
 	dirty = clear_page_dirty_for_io(page);
 
@@ -284,8 +286,7 @@ process_inline:
 }
 
 struct f2fs_dir_entry *find_in_inline_dir(struct inode *dir,
-			struct f2fs_filename *fname, struct page **res_page,
-			unsigned int flags)
+			struct f2fs_filename *fname, struct page **res_page)
 {
 	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
 	struct f2fs_inline_dentry *inline_dentry;
@@ -304,7 +305,7 @@ struct f2fs_dir_entry *find_in_inline_dir(struct inode *dir,
 	inline_dentry = inline_data_addr(ipage);
 
 	make_dentry_ptr(NULL, &d, (void *)inline_dentry, 2);
-	de = find_target_dentry(fname, namehash, NULL, &d, flags);
+	de = find_target_dentry(fname, namehash, NULL, &d);
 	unlock_page(ipage);
 	if (de)
 		*res_page = ipage;
@@ -527,20 +528,16 @@ bool f2fs_empty_inline_dir(struct inode *dir)
 	return true;
 }
 
-int f2fs_read_inline_dir(struct file *file, void *dirent, filldir_t filldir,
-						struct f2fs_str *fstr)
+int f2fs_read_inline_dir(struct file *file, struct dir_context *ctx,
+				struct f2fs_str *fstr)
 {
-	unsigned long pos = file->f_pos;
-	unsigned int bit_pos = 0;
 	struct inode *inode = file_inode(file);
 	struct f2fs_inline_dentry *inline_dentry = NULL;
 	struct page *ipage = NULL;
 	struct f2fs_dentry_ptr d;
 
-	if (pos >= NR_INLINE_DENTRY)
+	if (ctx->pos == NR_INLINE_DENTRY)
 		return 0;
-
-	bit_pos = (pos % NR_INLINE_DENTRY);
 
 	ipage = get_node_page(F2FS_I_SB(inode), inode->i_ino);
 	if (IS_ERR(ipage))
@@ -550,8 +547,8 @@ int f2fs_read_inline_dir(struct file *file, void *dirent, filldir_t filldir,
 
 	make_dentry_ptr(inode, &d, (void *)inline_dentry, 2);
 
-	if (!f2fs_fill_dentries(file, dirent, filldir, &d, 0, bit_pos, fstr))
-		file->f_pos = NR_INLINE_DENTRY;
+	if (!f2fs_fill_dentries(ctx, &d, 0, fstr))
+		ctx->pos = NR_INLINE_DENTRY;
 
 	f2fs_put_page(ipage, 1);
 	return 0;
