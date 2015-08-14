@@ -509,14 +509,13 @@ on boot
     write /proc/sys/vm/overcommit_memory 0
     write /proc/sys/vm/min_free_order_shift 4
     write /proc/sys/vm/vfs_cache_pressure 10000
-    write /proc/sys/vm/min_free_kbytes 137660
     chown root root /sys/module/lowmemorykiller/parameters/adj
     chmod 0660 /sys/module/lowmemorykiller/parameters/adj
     write /sys/module/lowmemorykiller/parameters/adj 0,1,2,3,8,16
     chmod 0220 /sys/module/lowmemorykiller/parameters/adj
     chown root root /sys/module/lowmemorykiller/parameters/minfree
     chmod 0660 /sys/module/lowmemorykiller/parameters/minfree
-    write /sys/module/lowmemorykiller/parameters/minfree 15360,19200,23040,26880,34415,43737
+    write /sys/module/lowmemorykiller/parameters/minfree 9216,11520,13824,16128,18432,23040
     chmod 0220 /sys/module/lowmemorykiller/parameters/minfree
     chown root system /sys/module/lowmemorykiller/parameters/nul
     chmod 0220 /sys/module/lowmemorykiller/parameters/nul
