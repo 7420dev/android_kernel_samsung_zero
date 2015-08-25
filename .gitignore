@@ -49,6 +49,7 @@ modules.builtin
 /*.img
 !/dtb.img
 /*.zip
+!/kernelzip/**
 
 #
 # Debian directory (make deb-pkg)
