@@ -32,4 +32,6 @@ if [ -e recovery.img ] ; then
 	ls -al arter97-recovery-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat version)"-philz_touch_"$(cat version_recovery | awk '{print $1}')".zip
 	rm recoveryzip/recovery.img
 	fakeroot tar -H ustar -c recovery.img > arter97-recovery-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat version)"-philz_touch_"$(cat version_recovery | awk '{print $1}')".tar
+	md5sum -t arter97-recovery-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat version)"-philz_touch_"$(cat version_recovery | awk '{print $1}')".tar >> arter97-recovery-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat version)"-philz_touch_"$(cat version_recovery | awk '{print $1}')".tar
+	mv arter97-recovery-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat version)"-philz_touch_"$(cat version_recovery | awk '{print $1}')".tar arter97-recovery-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat version)"-philz_touch_"$(cat version_recovery | awk '{print $1}')".tar.md5
 fi
