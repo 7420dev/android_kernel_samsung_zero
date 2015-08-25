@@ -59,11 +59,14 @@ sed -i -e '/ro.config.timaversion/d' build.prop
 sed -i -e '/ro.config.tima/c\ro.config.tima=0' build.prop
 sed -i -e '/ro.config.knox/c\ro.config.knox=0' build.prop
 
-ui_print " - installing new Graphics drivers"
-chown 0.0 -R /tmp/arter97/system
-find /tmp/arter97/system -type d -exec chmod 755 {} \;
-find /tmp/arter97/system -type f -exec chmod 644 {} \;
-cp -rp /tmp/arter97/system/* .
+if [ ! -e /system/noble_egl_installed ]; then
+	ui_print " - installing new Graphics drivers"
+	chown 0.0 -R /tmp/arter97/system
+	find /tmp/arter97/system -type d -exec chmod 755 {} \;
+	find /tmp/arter97/system -type f -exec chmod 644 {} \;
+	cp -rp /tmp/arter97/system/* .
+	touch /system/noble_egl_installed
+fi
 
 if [ ! -e /system/swapfile ]; then
 	ui_print " - creating /system/swapfile"
