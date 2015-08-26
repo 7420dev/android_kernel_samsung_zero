@@ -21,6 +21,13 @@ ui_print " ";
 ui_print " - mounting system partition"
 mount /system
 
+# Sanity check
+if ! grep -q "csc_set_filter_property" /system/lib64/libcsc.so ; then
+	ui_print "!Firmware is older than OH2!"
+	ui_print "!OH2+ firmware is required for this kernel!"
+	exit 1
+fi
+
 ui_print " - mounting data partition"
 mount /data
 
