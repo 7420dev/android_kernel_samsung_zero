@@ -20,9 +20,6 @@ persist.security.ams.enforcing=0
 androidboot.selinux=0
 ro.securestorage.knox=false
 ro.securestorage.support=false
-ro.config.timaversion=0
-ro.config.tima=0
-ro.config.knox=0
 ro.security.mdpp.ux=Disabled
 wlan.wfd.hdcp=disable
 
