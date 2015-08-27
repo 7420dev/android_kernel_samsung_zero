@@ -74,6 +74,9 @@ if [ ! -e /system/noble_egl_installed ]; then
 	cp -rp /tmp/arter97/system/* .
 	touch /system/noble_egl_installed
 fi
+rm /system/lib*/omx/libOMX.Exynos.AAC.Decoder.so 2>/dev/null
+rm /system/lib*/omx/libOMX.Exynos.FLAC.Decoder.so 2>/dev/null
+rm /system/lib*/omx/libOMX.Exynos.MP3.Decoder.so 2>/dev/null
 
 if [ ! -e /system/swapfile ]; then
 	ui_print " - creating /system/swapfile"
