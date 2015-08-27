@@ -249,15 +249,16 @@ static inline struct tty_struct *file_tty(struct file *file)
 
 int bbd_tty_close(void)
 {
-	if (!atomic_xchg(&bbd_tty_run, 0)) {
+	if (!atomic_read(&bbd_tty_run)) {
 		dprint("BBDTTY: already closed\n");
 		return 0;
 	}
 
 	/* This is needed for JTAG download (without LHD) */
-	// BbdEngine_Close(&gpbbd_dev->bbd_engine);
+        BbdEngine_Close(&gpbbd_dev->bbd_engine);
 
-	sent_autobaud = false;
+        sent_autobaud = false;
+	atomic_set(&bbd_tty_run, 0);
 
 	dprint("BBDTTY: %s TTY %p  ERR %ld\n", __func__, tty, IS_ERR(tty));
 

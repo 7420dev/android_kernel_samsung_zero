@@ -249,17 +249,6 @@ enum {
 #define DEFUALT_CAL_LOW_THRESHOLD		840
 #endif
 
-/* Sensors's reporting mode */
-#define REPORT_MODE_CONTINUOUS	0
-#define REPORT_MODE_ON_CHANGE	1
-#define REPORT_MODE_SPECIAL	2
-#define REPORT_MODE_UNKNOWN	3
-
-/* Key value for Camera - Gyroscope sync */
-#define CAMERA_GYROSCOPE_SYNC 7700000ULL //7.7ms
-#define CAMERA_GYROSCOPE_SYNC_DELAY 10000000ULL
-
-
 /* SSP -> AP ACK about write CMD */
 #define MSG_ACK		0x80	/* ACK from SSP to AP */
 #define MSG_NAK		0x70	/* NAK from SSP to AP */
@@ -328,57 +317,8 @@ enum {
 #ifdef CONFIG_SENSORS_SSP_INTERRUPT_GYRO_SENSOR
 	INTERRUPT_GYRO_SENSOR = 25,
 #endif
-	TILT_DETECTOR,
-	PICKUP_GESTURE,
-	MOTOR_TEST,
 	SENSOR_MAX,
 };
-
-#define SENSOR_REPORT_MODE { \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_SPECIAL, \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_CONTINUOUS, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_UNKNOWN, \
-	REPORT_MODE_UNKNOWN, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_ON_CHANGE, \
-	REPORT_MODE_CONTINUOUS, }
-
-#if defined(CONFIG_SENSORS_SSP_TMG399x)
-/* byte unit - not including timestamp */
-#define SENSOR_DATA_LEN	{ \
-	6, 6, 12, 6, 7, 6, 20, 2, 5, 10, \
-	1, 9, 0, 1, 1, 12, 17, 17, 4, 0, \
-	0, 0, 0, 1, 12, 6, 1, 6, }
-
-#else
-#define SENSOR_DATA_LEN	{ \
-	6, 6, 12, 6, 7, 6, 20, 3, 5, 10, \
-	2, 9, 0, 1, 1, 12, 17, 17, 4, 0, \
-	0, 0, 0, 1, 12, 6, 1, 6, }
-
-#endif
 
 struct meta_data_event {
 	s32 what;
@@ -449,8 +389,6 @@ struct sensor_value {
 #endif
 		s32 pressure[3];
 		u32 step_diff;
-		u8 tilt_detector;
-		u8 pickup_gesture;
 		struct meta_data_event meta_data;
 	};
 	u64 timestamp;
@@ -552,18 +490,12 @@ struct ssp_data {
 	struct iio_dev *game_rot_indio_dev;
 	struct iio_dev *step_det_indio_dev;
 	struct iio_dev *pressure_indio_dev;
-	struct iio_dev *tilt_indio_dev;
-	struct iio_dev *pickup_indio_dev;
-	struct iio_dev *motor_test_indio_dev;
 	struct iio_trigger *accel_trig;
 	struct iio_trigger *gyro_trig;
 	struct iio_trigger *rot_trig;
 	struct iio_trigger *game_rot_trig;
 	struct iio_trigger *step_det_trig;
 	struct iio_trigger *pressure_det_trig;
-	struct iio_trigger *tilt_trig;
-	struct iio_trigger *pickup_trig;
-	struct iio_trigger *motor_test_trig;
 
 	struct input_dev *light_input_dev;
 #ifdef CONFIG_SENSORS_SSP_IRDATA_FOR_CAMERA
@@ -666,7 +598,7 @@ struct ssp_data {
 
 	int sealevelpressure;
 	unsigned int uGyroDps;
-	u64 uSensorState;
+	unsigned int uSensorState;
 	unsigned int uCurFirmRev;
 	unsigned int uFactoryProxAvg[4];
 	char uLastResumeState;
@@ -674,17 +606,12 @@ struct ssp_data {
 	s32 iPressureCal;
 	u64 step_count_total;
 
-	atomic64_t aSensorEnable;
+	atomic_t aSensorEnable;
 	int64_t adDelayBuf[SENSOR_MAX];
 	u64 lastTimestamp[SENSOR_MAX];
-	u64 lastModTimestamp[SENSOR_MAX];
-	int data_len[SENSOR_MAX];
-	int report_mode[SENSOR_MAX];
 	s32 batchLatencyBuf[SENSOR_MAX];
 	s8 batchOptBuf[SENSOR_MAX];
 	bool reportedData[SENSOR_MAX];
-	bool skipEventReport;
-	bool cameraGyroSyncMode;
 
 	int (*wakeup_mcu)(void);
 	int (*set_mcu_reset)(int);
@@ -842,7 +769,7 @@ void set_proximity_threshold(struct ssp_data *, unsigned int, unsigned int);
 void set_proximity_barcode_enable(struct ssp_data *, bool);
 void set_gesture_current(struct ssp_data *, unsigned char);
 int get_msdelay(int64_t);
-u64 get_sensor_scanning_info(struct ssp_data *);
+unsigned int get_sensor_scanning_info(struct ssp_data *);
 unsigned int get_firmware_rev(struct ssp_data *);
 int forced_to_download_binary(struct ssp_data *, int);
 int parse_dataframe(struct ssp_data *, char *, int);
@@ -878,9 +805,6 @@ int print_mcu_debug(char *, int *, int);
 void report_temp_humidity_data(struct ssp_data *, struct sensor_value *);
 void report_shake_cam_data(struct ssp_data *, struct sensor_value *);
 void report_bulk_comp_data(struct ssp_data *data);
-void report_tilt_data(struct ssp_data *, struct sensor_value *);
-void report_pickup_data(struct ssp_data *, struct sensor_value *);
-void report_motor_test_data(struct ssp_data *, struct sensor_value *);
 unsigned int get_module_rev(struct ssp_data *data);
 void reset_mcu(struct ssp_data *);
 void convert_acc_data(s16 *);
