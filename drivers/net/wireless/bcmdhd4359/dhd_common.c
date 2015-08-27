@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_common.c 565320 2015-06-20 10:06:32Z $
+ * $Id: dhd_common.c 569369 2015-07-08 04:01:49Z $
  */
 #include <typedefs.h>
 #include <osl.h>
@@ -3479,19 +3479,25 @@ dhd_dump_eapol_4way_message(char *dump_data, bool direction)
 		sec = 0  != (us_tmp & 0x200);
 		install  = 0 != (us_tmp & 0x40);
 		if (!sec && !mic && ack && !install && pair && !kerr && !req) {
-			DHD_ERROR(("ETHER_TYPE_802_1X [%s] : M1 of 4way\n", direction ? "TX" : "RX"));
+			DHD_ERROR(("ETHER_TYPE_802_1X [%s] : M1 of 4way\n",
+				direction ? "TX" : "RX"));
 		} else if (pair && !install && !ack && mic && !sec && !kerr && !req) {
-			DHD_ERROR(("ETHER_TYPE_802_1X [%s] : M2 of 4way\n", direction ? "TX" : "RX"));
+			DHD_ERROR(("ETHER_TYPE_802_1X [%s] : M2 of 4way\n",
+				direction ? "TX" : "RX"));
 		} else if (pair && ack && mic && sec && !kerr && !req) {
-			DHD_ERROR(("ETHER_TYPE_802_1X [%s] : M3 of 4way\n", direction ? "TX" : "RX"));
+			DHD_ERROR(("ETHER_TYPE_802_1X [%s] : M3 of 4way\n",
+				direction ? "TX" : "RX"));
 		} else if (pair && !install && !ack && mic && sec && !req && !kerr) {
-			DHD_ERROR(("ETHER_TYPE_802_1X [%s] : M4 of 4way\n", direction ? "TX" : "RX"));
+			DHD_ERROR(("ETHER_TYPE_802_1X [%s] : M4 of 4way\n",
+				direction ? "TX" : "RX"));
 		} else {
 			DHD_ERROR(("ETHER_TYPE_802_1X [%s]: ver %d, type %d, replay %d\n",
-				direction ? "TX" : "RX", dump_data[14], dump_data[15], dump_data[30]));
+				direction ? "TX" : "RX",
+				dump_data[14], dump_data[15], dump_data[30]));
 		}
 	} else {
 		DHD_ERROR(("ETHER_TYPE_802_1X [%s]: ver %d, type %d, replay %d\n",
-				direction ? "TX" : "RX", dump_data[14], dump_data[15], dump_data[30]));
+				direction ? "TX" : "RX",
+				dump_data[14], dump_data[15], dump_data[30]));
 	}
 }

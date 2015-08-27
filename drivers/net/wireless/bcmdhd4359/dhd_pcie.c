@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_pcie.c 566928 2015-06-26 06:39:07Z $
+ * $Id: dhd_pcie.c 569369 2015-07-08 04:01:49Z $
  */
 
 
@@ -3607,20 +3607,23 @@ dhdpcie_bus_suspend(struct dhd_bus *bus, bool state)
 			DHD_ERROR(("%s: Got D3 Ack \n", __FUNCTION__));
 			/* Got D3 Ack. Suspend the bus */
 			if (active) {
-				DHD_ERROR(("%s():Suspend failed because of wakelock restoring Dongle to D0\n",
-					__FUNCTION__));
+				DHD_ERROR(("%s():Suspend failed because of wakelock restoring "
+					"Dongle to D0\n", __FUNCTION__));
 
 				/*
-				 * Dongle still thinks that it has to be in D3 state until gets a D0 Inform,
-				 * but we are backing off from suspend. Ensure that Dongle is brought back to D0.
+				 * Dongle still thinks that it has to be in D3 state
+				 * until gets a D0 Inform, but we are backing off from suspend.
+				 * Ensure that Dongle is brought back to D0.
 				 *
-				 * Bringing back Dongle from D3 Ack state to D0 state is a 2 step process.
-				 * Dongle would want to know that D0 Inform would be sent as a MB interrupt
-				 * to bring it out of D3 Ack state to D0 state. So we have to send both
-				 * this message.
+				 * Bringing back Dongle from D3 Ack state to D0 state
+				 * is a 2 step process. Dongle would want to know that D0 Inform
+				 * would be sent as a MB interrupt
+				 * to bring it out of D3 Ack state to D0 state.
+				 * So we have to send both this message.
 				 */
 				DHD_OS_WAKE_LOCK_WAIVE(bus->dhd);
-				dhdpcie_send_mb_data(bus, (H2D_HOST_D0_INFORM_IN_USE|H2D_HOST_D0_INFORM));
+				dhdpcie_send_mb_data(bus,
+					(H2D_HOST_D0_INFORM_IN_USE | H2D_HOST_D0_INFORM));
 				DHD_OS_WAKE_LOCK_RESTORE(bus->dhd);
 
 				bus->suspended = FALSE;

@@ -26,7 +26,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_msgbuf.c 566928 2015-06-26 06:39:07Z $
+ * $Id: dhd_msgbuf.c 569369 2015-07-08 04:01:49Z $
  */
 
 
@@ -4593,9 +4593,10 @@ dhd_msgbuf_wait_ioctl_cmplt(dhd_pub_t *dhd, uint32 len, void *buf)
 	if (timeleft == 0) {
 		dhd->rxcnt_timeout++;
 		dhd->rx_ctlerrs++;
-		DHD_ERROR(("%s: resumed on timeout rxcnt_timeout %d ioctl_cmd %d trans_id %d state %d\n",
-			__FUNCTION__, dhd->rxcnt_timeout, prot->curr_ioctl_cmd, prot->ioctl_trans_id,
-			prot->ioctl_state & ~MSGBUF_IOCTL_RESP_PENDING));
+		DHD_ERROR(("%s: resumed on timeout rxcnt_timeout %d ioctl_cmd %d "
+			"trans_id %d state %d\n",
+			__FUNCTION__, dhd->rxcnt_timeout, prot->curr_ioctl_cmd,
+			prot->ioctl_trans_id, prot->ioctl_state & ~MSGBUF_IOCTL_RESP_PENDING));
 
 		dhd_prot_ctrl_ring_print(dhd);
 
@@ -6047,7 +6048,7 @@ dhd_prot_ctrl_ring_print(dhd_pub_t *dhd)
 	dhd_prot_t *prot = dhd->prot;
 	msgbuf_ring_t *flow_ring;
 
-	DHD_ERROR(("\n ----------- DUMPING IOCTL RING RD WR Pointers Seen by the HOST  ----------- \r\n"));
+	DHD_ERROR(("\n ------- DUMPING IOCTL RING RD WR Pointers Seen by the HOST ------- \r\n"));
 
 	flow_ring =  &prot->h2dring_ctrl_subn;
 	DHD_ERROR(("CtrlPost:  RD: %d WR %d \r\n", flow_ring->rd, flow_ring->wr));

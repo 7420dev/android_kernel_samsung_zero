@@ -337,7 +337,8 @@ enum p9220_read_mode {
 enum p9220_headroom {
 	P9220_HEADROOM_0 = 0,
 	P9220_HEADROOM_1, /* 0.277V */
-	P9220_HEADROOM_2, /* 0.650V */
+	P9220_HEADROOM_2, /* 0.497V */
+	P9220_HEADROOM_3, /* 0.650V */
 };
 
 struct p9220_ppp_info {

@@ -163,7 +163,7 @@ enum chg_adc_value {
 	CHG_INIT_DETECTED_I_IN,
 };
 
-#define INPUT_CURRENT_TA		                1500
+#define INPUT_CURRENT_TA		                1000
 #define INPUT_CURRENT_WPC		                500
 
 struct max77833_charger_data {

@@ -228,50 +228,9 @@ static int max77833_get_charging_health(struct max77833_charger_data *charger)
 	int state;
 	int vbus_state;
 	int retry_cnt;
-	u8 chg_dtls_00, chg_dtls, reg_data;
+	u8 chg_dtls_00, chg_dtls;
 	u8 chg_cnfg_00, chg_cnfg_04 ,chg_cnfg_05, chg_cnfg_06, chg_cnfg_16, chg_cnfg_18;
 
-	max77833_read_reg(charger->i2c,
-			  MAX77833_CHG_REG_DTLS_01, &reg_data);
-	reg_data = ((reg_data & MAX77833_BAT_DTLS) >> MAX77833_BAT_DTLS_SHIFT);
-
-	pr_info("%s: reg_data(0x%x)\n", __func__, reg_data);
-	switch (reg_data) {
-	case 0x00:
-		pr_info("%s: No battery and the charger is suspended\n",
-			__func__);
-		state = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
-		break;
-	case 0x01:
-		pr_info("%s: battery is okay "
-			"but its voltage is low(~VPQLB)\n", __func__);
-		state = POWER_SUPPLY_HEALTH_GOOD;
-		break;
-	case 0x02:
-		pr_info("%s: battery dead\n", __func__);
-		state = POWER_SUPPLY_HEALTH_DEAD;
-		break;
-	case 0x03:
-		state = POWER_SUPPLY_HEALTH_GOOD;
-		break;
-	case 0x04:
-		pr_info("%s: battery is okay" \
-			"but its voltage is low\n", __func__);
-		state = POWER_SUPPLY_HEALTH_GOOD;
-		break;
-	case 0x07:
-		pr_info("%s: battery voltage information not available\n",
-			__func__);
-		state = POWER_SUPPLY_HEALTH_UNKNOWN;
-		break;
-	default:
-		pr_info("%s: battery unknown : 0x%d\n", __func__, reg_data);
-		state = POWER_SUPPLY_HEALTH_UNKNOWN;
-		break;
-	}
-
-	if ((state == POWER_SUPPLY_HEALTH_GOOD) ||	\
-		(state == POWER_SUPPLY_HEALTH_UNKNOWN)) {
 		union power_supply_propval value;
 		psy_do_property("battery", get,
 				POWER_SUPPLY_PROP_HEALTH, value);
@@ -344,8 +303,10 @@ static int max77833_get_charging_health(struct max77833_charger_data *charger)
 				(charger->cable_type != POWER_SUPPLY_TYPE_PMA_WIRELESS)) {
 			pr_info("%s: keep under-voltage\n", __func__);
 			state = POWER_SUPPLY_HEALTH_UNDERVOLTAGE;
+		} else {
+			pr_info("%s: set health good.\n", __func__);
+			state = POWER_SUPPLY_HEALTH_GOOD;
 		}
-	}
 
 	return (int)state;
 }

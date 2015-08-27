@@ -30,6 +30,7 @@
 #ifndef _MPTCP_V6_H
 #define _MPTCP_V6_H
 
+#ifdef CONFIG_MPTCP
 #include <linux/in6.h>
 #include <net/if_inet6.h>
 
@@ -69,4 +70,5 @@ static inline int mptcp_v6_do_rcv(struct sock *meta_sk, struct sk_buff *skb)
 
 #endif /* CONFIG_MPTCP */
 
+#endif /* CONFIG_MPTCP */
 #endif /* _MPTCP_V6_H */

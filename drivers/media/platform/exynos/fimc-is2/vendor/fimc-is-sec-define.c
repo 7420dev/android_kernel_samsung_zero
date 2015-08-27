@@ -39,6 +39,7 @@ bool crc32_c1_check_factory = true;
 bool companion_lsc_isvalid = false;
 bool companion_coef_isvalid = false;
 #ifdef CONFIG_COMPANION_C2_USE
+bool crc32_c1_check_front = true;
 bool companion_front_lsc_isvalid = false;
 #endif
 #endif
@@ -478,6 +479,7 @@ bool fimc_is_sec_check_cal_crc32(char *buf, int id)
 			err("Camera: C2 Shading address has error: start(0x%08X), end(0x%08X)",
 				finfo->c2_shading_start_addr, finfo->c2_shading_end_addr);
 			crc32_temp = false;
+			crc32_c1_check_front = false;
 			goto out;
 		}
 
@@ -485,6 +487,7 @@ bool fimc_is_sec_check_cal_crc32(char *buf, int id)
 		if (checksum != buf32[checksum_base]) {
 			err("Camera: CRC32 error at the C2 Shading (0x%08X != 0x%08X)", checksum, buf32[checksum_base]);
 			crc32_temp = false;
+			crc32_c1_check_front = false;
 			goto out;
 		}
 	}

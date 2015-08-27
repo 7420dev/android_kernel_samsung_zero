@@ -25,7 +25,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: dhd_linux.c 568879 2015-07-06 09:36:56Z $
+ * $Id: dhd_linux.c 570688 2015-07-13 07:53:41Z $
  */
 
 #include <typedefs.h>
@@ -883,7 +883,8 @@ fail:
  */
 void dhd_select_cpu_candidacy(dhd_info_t *dhd)
 {
-	uint32 available_cpus; /* count of available cpus */
+	uint32 primary_available_cpus; /* count of primary available cpus */
+	uint32 secondary_available_cpus; /* count of secondary available cpus */
 	uint32 napi_cpu = 0; /* cpu selected for napi rx processing */
 	uint32 compl_cpu = 0; /* cpu selected for completion jobs */
 
@@ -901,9 +902,9 @@ void dhd_select_cpu_candidacy(dhd_info_t *dhd)
 	cpumask_and(dhd->cpumask_secondary_new, dhd->cpumask_secondary,
 		dhd->cpumask_curr_avail);
 
-	available_cpus = cpumask_weight(dhd->cpumask_primary_new);
+	primary_available_cpus = cpumask_weight(dhd->cpumask_primary_new);
 
-	if (available_cpus > 0) {
+	if (primary_available_cpus > 0) {
 		napi_cpu = cpumask_first(dhd->cpumask_primary_new);
 
 		/* If no further CPU is available,
@@ -918,12 +919,12 @@ void dhd_select_cpu_candidacy(dhd_info_t *dhd)
 		__FUNCTION__, napi_cpu, compl_cpu));
 
 	/* -- Now check for the CPUs from the secondary mask -- */
-	available_cpus = cpumask_weight(dhd->cpumask_secondary_new);
+	secondary_available_cpus = cpumask_weight(dhd->cpumask_secondary_new);
 
 	DHD_INFO(("%s Available secondary cpus %d nr_cpu_ids %d\n",
-		__FUNCTION__, available_cpus, nr_cpu_ids));
+		__FUNCTION__, secondary_available_cpus, nr_cpu_ids));
 
-	if (available_cpus > 0) {
+	if (secondary_available_cpus > 0) {
 		/* At this point if napi_cpu is unassigned it means no CPU
 		 * is online from Primary Group
 		 */
@@ -937,7 +938,10 @@ void dhd_select_cpu_candidacy(dhd_info_t *dhd)
 		/* If no CPU was available for completion, choose CPU 0 */
 		if (compl_cpu >= nr_cpu_ids)
 			compl_cpu = 0;
-	} else {
+	}
+
+	if ((primary_available_cpus == 0) &&
+			(secondary_available_cpus == 0)) {
 		/* No CPUs available from primary or secondary mask */
 		napi_cpu = 0;
 		compl_cpu = 0;
@@ -4979,7 +4983,7 @@ void dhd_set_scb_probe(dhd_pub_t *dhd)
 
 	bcm_mkiovar("scb_probe", NULL, 0, iovbuf, sizeof(iovbuf));
 
-	if ((ret = dhd_wl_ioctl_cmd(dhd, WLC_GET_VAR, iovbuf, sizeof(iovbuf), TRUE, 0)) < 0) {
+	if ((ret = dhd_wl_ioctl_cmd(dhd, WLC_GET_VAR, iovbuf, sizeof(iovbuf), FALSE, 0)) < 0) {
 		DHD_ERROR(("%s: GET max_scb_probe failed\n", __FUNCTION__));
 	}
 
@@ -5532,6 +5536,12 @@ dhd_stop(struct net_device *net)
 #endif /* DHD_LB && DHD_LB_RXP */
 		}
 
+#if defined(ARGOS_RPS_CPU_CTL) && defined(ARGOS_CPU_SCHEDULER)
+		argos_register_notifier_deinit();
+#endif /* ARGOS_RPS_CPU_CTL && ARGOS_CPU_SCHEDULER */
+#ifdef DHDTCPACK_SUPPRESS
+		dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_OFF);
+#endif /* DHDTCPACK_SUPPRESS */
 #if defined(DHD_LB) && defined(DHD_LB_RXP)
 		if (ifp->net == dhd->rx_napi_netdev) {
 			DHD_INFO(("%s napi<%p> disabled ifp->net<%p,%s>\n",
@@ -5788,6 +5798,16 @@ dhd_open(struct net_device *net)
 #endif /* DHD_LB_RXP */
 #endif /* DHD_LB */
 		}
+#if defined(ARGOS_CPU_SCHEDULER) && defined(ARGOS_RPS_CPU_CTL)
+		argos_register_notifier_init(net);
+#endif /* ARGOS_CPU_SCHEDULER && ARGOS_RPS_CPU_CTL */
+#if defined(BCMPCIE) && defined(DHDTCPACK_SUPPRESS)
+#if defined(ARGOS_CPU_SCHEDULER) && defined(ARGOS_RPS_CPU_CTL)
+		dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_OFF);
+#else
+		dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_HOLD);
+#endif /* ARGOS_CPU_SCHEDULER && ARGOS_RPS_CPU_CTL */
+#endif /* BCMPCIE && DHDTCPACK_SUPPRESS */
 #if defined(DHD_LB) && defined(DHD_LB_RXP)
 		if (dhd->rx_napi_netdev == NULL) {
 			dhd->rx_napi_netdev = dhd->iflist[ifidx]->net;
@@ -6800,11 +6820,7 @@ dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
 #ifdef BCMSDIO
 	dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_DELAYTX);
 #elif defined(BCMPCIE)
-#if (defined(SET_RPS_CPUS) || defined(ARGOS_RPS_CPU_CTL))
-	dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_OFF);
-#else
 	dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_HOLD);
-#endif /* (SET_RPS_CPUS || ARGOS_RPS_CPU_CTL) */
 #else
 	dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_OFF);
 #endif /* BCMSDIO */
@@ -8900,11 +8916,7 @@ dhd_register_if(dhd_pub_t *dhdp, int ifidx, bool need_rtnl_lock)
 	}
 
 
-#if defined(ARGOS_CPU_SCHEDULER) && defined(ARGOS_RPS_CPU_CTL)
-	if (ifidx == 0) {
-		argos_register_notifier_init(net);
-	}
-#endif /* ARGOS_CPU_SCHEDULER && ARGOS_RPS_CPU_CTL */
+
 	printf("Register interface [%s]  MAC: "MACDBG"\n\n", net->name,
 #if defined(CUSTOMER_HW4)
 		MAC2STRDBG(dhd->pub.mac.octet));
@@ -8929,6 +8941,9 @@ dhd_register_if(dhd_pub_t *dhdp, int ifidx, bool need_rtnl_lock)
 #if defined(DHD_LB) && defined(DHD_LB_RXP)
 			__skb_queue_purge(&dhd->rx_pend_queue);
 #endif /* DHD_LB && DHD_LB_RXP */
+#if defined(BCMPCIE) && defined(DHDTCPACK_SUPPRESS)
+			dhd_tcpack_suppress_set(dhdp, TCPACK_SUP_OFF);
+#endif /* BCMPCIE && DHDTCPACK_SUPPRESS */
 			dhd_net_bus_devreset(net, TRUE);
 #ifdef BCMLXSDMMC
 			dhd_net_bus_suspend(net);
@@ -12133,16 +12148,8 @@ int dhd_rps_cpus_enable(struct net_device *net, int enable)
 		if (enable) {
 			DHD_INFO(("%s : set rps_cpus as [%s]\n", __FUNCTION__, RPS_CPU_SETBUF));
 			custom_rps_map_set(ifp->net->_rx, RPS_CPU_SETBUF, strlen(RPS_CPU_SETBUF));
-#if (defined(DHDTCPACK_SUPPRESS) && defined(BCMPCIE))
-			DHD_TRACE(("%s : set ack suppress. TCPACK_SUP_HOLD.\n", __FUNCTION__));
-			dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_HOLD);
-#endif /* DHDTCPACK_SUPPRESS && BCMPCIE */
 		} else {
 			custom_rps_map_clear(ifp->net->_rx);
-#if (defined(DHDTCPACK_SUPPRESS) && defined(BCMPCIE))
-			DHD_TRACE(("%s : clear ack suppress.\n", __FUNCTION__));
-			dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_OFF);
-#endif /* DHDTCPACK_SUPPRESS && BCMPCIE */
 		}
 	} else {
 		DHD_ERROR(("%s : ifp is NULL!!\n", __FUNCTION__));
@@ -12235,9 +12242,6 @@ int
 argos_register_notifier_init(struct net_device *net)
 {
 	int ret = 0;
-#if (defined(DHDTCPACK_SUPPRESS) && defined(BCMPCIE))
-	dhd_info_t *dhd;
-#endif /* DHDTCPACK_SUPPRESS && BCMPCIE */
 
 	DHD_INFO(("DHD: %s: \n", __FUNCTION__));
 	argos_rps_ctrl_data.wlan_primary_netdev = net;
@@ -12248,21 +12252,12 @@ argos_register_notifier_init(struct net_device *net)
 		DHD_ERROR(("DHD:Failed to register WIFI notifier , ret=%d\n", ret));
 	}
 
-#if (defined(DHDTCPACK_SUPPRESS) && defined(BCMPCIE))
-	dhd = DHD_DEV_INFO(argos_rps_ctrl_data.wlan_primary_netdev);
-	DHD_TRACE(("%s : clear ack suppress.\n", __FUNCTION__));
-	dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_OFF);
-#endif /* DHDTCPACK_SUPPRESS && BCMPCIE */
-
 	return ret;
 }
 
 int
 argos_register_notifier_deinit(void)
 {
-#if defined(DHDTCPACK_SUPPRESS) && defined(BCMPCIE)
-	dhd_info_t *dhd;
-#endif /* DHDTCPACK_SUPPRESS && BCMPCIE */
 	DHD_INFO(("DHD: %s: \n", __FUNCTION__));
 
 	if (argos_rps_ctrl_data.wlan_primary_netdev == NULL) {
@@ -12270,11 +12265,6 @@ argos_register_notifier_deinit(void)
 		return -1;
 	}
 	custom_rps_map_clear(argos_rps_ctrl_data.wlan_primary_netdev->_rx);
-#if defined(DHDTCPACK_SUPPRESS) && defined(BCMPCIE)
-	dhd = DHD_DEV_INFO(argos_rps_ctrl_data.wlan_primary_netdev);
-	DHD_TRACE(("%s : clear ack suppress.\n", __FUNCTION__));
-	dhd_tcpack_suppress_set(&dhd->pub, TCPACK_SUP_OFF);
-#endif /* DHDTCPACK_SUPPRESS && BCMPCIE */
 	sec_argos_unregister_notifier(&argos_wifi, "WIFI");
 	argos_rps_ctrl_data.wlan_primary_netdev = NULL;
 	argos_rps_ctrl_data.argos_rps_cpus_enabled = 0;

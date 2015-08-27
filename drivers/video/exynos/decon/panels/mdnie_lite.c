@@ -141,7 +141,7 @@ static struct mdnie_table *mdnie_find_table(struct mdnie_info *mdnie)
 
 exit:
 #if defined(CONFIG_PANEL_S6E3HA3_DYNAMIC) || defined(CONFIG_PANEL_S6E3HF3_DYNAMIC)
-	if(mdnie->disable_trans_dimming) {
+	if((mdnie->disable_trans_dimming) && (table != NULL)) {
 		dev_info(mdnie->dev, "%s: disable_trans_dimming=%d\n", __func__, mdnie->disable_trans_dimming);
 		memcpy(&(mdnie->table_buffer), table, sizeof(struct mdnie_table));
 		memcpy(mdnie->sequence_buffer, table->tune[MDNIE_CMD1].sequence,

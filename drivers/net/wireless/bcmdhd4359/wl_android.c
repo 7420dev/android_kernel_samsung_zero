@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_android.c 568110 2015-07-01 13:20:22Z $
+ * $Id: wl_android.c 570193 2015-07-10 06:26:21Z $
  */
 
 #include <linux/module.h>
@@ -55,6 +55,9 @@
 #ifdef WL_NAN
 #include <wl_cfgnan.h>
 #endif /* WL_NAN */
+#ifdef DHDTCPACK_SUPPRESS
+#include <dhd_ip.h>
+#endif /* DHDTCPACK_SUPPRESS */
 
 /*
  * Android private command strings, PLEASE define new private commands here
@@ -3966,6 +3969,19 @@ wl_android_set_rps_cpus(struct net_device *dev, char *command, int total_len)
 
 	enable = command[strlen(CMD_RPSMODE) + 1] - '0';
 	error = dhd_rps_cpus_enable(dev, enable);
+
+#if defined(DHDTCPACK_SUPPRESS) && defined(BCMPCIE) && defined(WL_CFG80211)
+	if (!error) {
+		void *dhdp = wl_cfg80211_get_dhdp();
+		if (enable) {
+			DHD_TRACE(("%s : set ack suppress. TCPACK_SUP_HOLD.\n", __FUNCTION__));
+			dhd_tcpack_suppress_set(dhdp, TCPACK_SUP_HOLD);
+		} else {
+			DHD_TRACE(("%s : clear ack suppress.\n", __FUNCTION__));
+			dhd_tcpack_suppress_set(dhdp, TCPACK_SUP_OFF);
+		}
+	}
+#endif /* DHDTCPACK_SUPPRESS && BCMPCIE && WL_CFG80211 */
 
 	return error;
 }

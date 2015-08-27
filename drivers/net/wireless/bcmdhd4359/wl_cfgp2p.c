@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfgp2p.c 568077 2015-07-01 11:22:55Z $
+ * $Id: wl_cfgp2p.c 569369 2015-07-08 04:01:49Z $
  *
  */
 #include <typedefs.h>
@@ -2368,7 +2368,7 @@ wl_cfgp2p_add_p2p_disc_if(struct bcm_cfg80211 *cfg)
 		 * first and then indicate the HANG event
 		 */
 		wl_cfgp2p_del_p2p_disc_if(cfg->p2p_wdev, cfg);
-#endif /* CUSTOMER_HW4*/
+#endif /* CUSTOMER_HW4 */
 		net_os_send_hang_message(bcmcfg_to_prmry_ndev(cfg));
 		return ERR_PTR(-ENODEV);
 	}

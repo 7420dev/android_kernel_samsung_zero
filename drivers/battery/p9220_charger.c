@@ -640,6 +640,13 @@ void p9220_set_vrect_adjust(struct p9220_charger_data *charger, int set)
 			p9220_reg_write(charger->client, P9220_VRECT_SET_REG, 0x36);
 			break;
 		case P9220_HEADROOM_2:
+			p9220_reg_write(charger->client, P9220_VRECT_SET_REG, 0x61);
+			msleep(10);
+			p9220_reg_write(charger->client, P9220_VRECT_SET_REG, 0x61);
+			msleep(10);
+			p9220_reg_write(charger->client, P9220_VRECT_SET_REG, 0x61);
+			break;
+		case P9220_HEADROOM_3:
 			p9220_reg_write(charger->client, P9220_VRECT_SET_REG, 0x7f);
 			msleep(10);
 			p9220_reg_write(charger->client, P9220_VRECT_SET_REG, 0x7f);
@@ -655,7 +662,13 @@ void p9220_set_vrect_adjust(struct p9220_charger_data *charger, int set)
 void p9220_mis_align(struct p9220_charger_data *charger)
 {
 	pr_info("%s: Reset M0\n",__func__);
-	p9220_reg_write(charger->client, 0x3040, 0x80); /*restart M0 */
+	if(charger->pdata->cable_type == P9220_PAD_MODE_PMA)
+		p9220_reg_write(charger->client, 0x3040, 0x80); /*restart M0 */
+	else {
+		p9220_send_eop(charger, POWER_SUPPLY_HEALTH_UNDERVOLTAGE);
+		msleep(250);
+		p9220_reg_write(charger->client, 0x3040, 0x80); /*restart M0 */
+	}
 }
 
 int p9220_get_firmware_version(struct p9220_charger_data *charger, int firm_mode)
@@ -763,6 +776,11 @@ static int datacmp(const char *cs, const char *ct, int count)
 			pr_err("%s, cnt %d\n", __func__, count);
 			return c1 < c2 ? -1 : 1;
 		}
+		/*debug
+		else {
+			pr_err("%s, c1:%x c2:%x\n", __func__, c1, c2);
+		}
+		debug*/
 		count--;
 	}
 	return 0;
@@ -798,6 +816,73 @@ static int LoadOTPLoaderInRAM(struct p9220_charger_data *charger, u16 addr)
 		return 0;
 	}
 	return 1;
+}
+
+static int p9220_firmware_verify(struct p9220_charger_data *charger)
+{
+	int ret = 0;
+	const u16 sendsz = 16;
+	int i = 0;
+	int block_len = 0;
+	int block_addr = 0;
+	u8 rdata[sendsz+2];
+
+/* I2C WR to prepare boot-loader write */
+
+	if (p9220_reg_write(charger->client, 0x3C00, 0x80) < 0) {
+		pr_err("%s: reset FDEM error\n", __func__);
+		return 0;
+	}
+
+	if (p9220_reg_write(charger->client, 0x3000, 0x5a) < 0) {
+		pr_err("%s: key error\n", __func__);
+		return 0;
+	}
+
+	if (p9220_reg_write(charger->client, 0x3040, 0x11) < 0) {
+		pr_err("%s: halt M0, OTP_I2C_EN set error\n", __func__);
+		return 0;
+	}
+
+	if (p9220_reg_write(charger->client, 0x3C04, 0x04) < 0) {
+		pr_err("%s: OTP_VRR 2.98V error\n", __func__);
+		return 0;
+	}
+
+	if (p9220_reg_write(charger->client, 0x5C00, 0x11) < 0) {
+		pr_err("%s: OTP_CTRL VPP_EN set error\n", __func__);
+		return 0;
+	}
+
+	dev_err(&charger->client->dev, "%s, request_firmware\n", __func__);
+	ret = request_firmware(&charger->firm_data_bin, P9220S_OTP_FW_HEX_PATH,
+		&charger->client->dev);
+	if ( ret < 0) {
+		dev_err(&charger->client->dev, "%s: failed to request firmware %s (%d) \n",
+				__func__, P9220S_OTP_FW_HEX_PATH, ret);
+		return 0;
+	}
+	ret = 1;
+	wake_lock(&charger->wpc_update_lock);
+	for (i = 0; i < charger->firm_data_bin->size; i += sendsz) {
+		block_len = (i + sendsz) > charger->firm_data_bin->size ? charger->firm_data_bin->size - i : sendsz;
+		block_addr = 0x8000 + i;
+
+		if (p9220_reg_multi_read(charger->client, block_addr, rdata, block_len) < 0) {
+			pr_err("%s, read failed\n", __func__);
+			ret = 0;
+			break;
+		}
+		if (datacmp(charger->firm_data_bin->data + i, rdata, block_len)) {
+			pr_err("%s, verify data is not matched.\n", __func__);
+			ret = -1;
+			break;
+		}
+	}
+	release_firmware(charger->firm_data_bin);
+
+	wake_unlock(&charger->wpc_update_lock);
+	return ret;
 }
 
 static int p9220_reg_multi_write_verify(struct i2c_client *client, u16 reg, const u8 * val, int size)
@@ -1234,10 +1319,11 @@ static int p9220_chg_get_property(struct power_supply *psy,
 		case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		case POWER_SUPPLY_PROP_HEALTH:
 		case POWER_SUPPLY_PROP_CURRENT_NOW:
-		case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
 		case POWER_SUPPLY_PROP_CHARGE_OTG_CONTROL:
 		case POWER_SUPPLY_PROP_CHARGE_POWERED_OTG_CONTROL:
 			return -ENODATA;
+		case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+				break;
 		case POWER_SUPPLY_PROP_ONLINE:
 			pr_info("%s cable_type =%d \n ", __func__, charger->pdata->cable_type);
 			val->intval = charger->pdata->cable_type;
@@ -1268,6 +1354,8 @@ static int p9220_chg_get_property(struct power_supply *psy,
 				//	val->intval = -1;
 			} else if(val->intval == SEC_TX_FIRMWARE) {
 				val->intval = charger->pdata->tx_status;
+			} else if(val->intval == SEC_WIRELESS_OTP_FIRM_VERIFY) {
+				val->intval = p9220_firmware_verify(charger);
 			} else{
 				val->intval = -1;
 				pr_err("%s wrong mode \n", __func__);
@@ -1299,6 +1387,7 @@ static int p9220_chg_set_property(struct power_supply *psy,
 	struct p9220_charger_data *charger =
 		container_of(psy, struct p9220_charger_data, psy_chg);
 	int i = 0;
+	union power_supply_propval value1, value2;
 
 	switch (psp) {
 		case POWER_SUPPLY_PROP_STATUS:
@@ -1341,6 +1430,23 @@ static int p9220_chg_set_property(struct power_supply *psy,
 				charger->pdata->ic_on_mode = false;
 			}
 			break;
+		case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+			charger->pdata->siop_level = val->intval;
+			psy_do_property("battery", get,
+				POWER_SUPPLY_PROP_STATUS, value1);
+			psy_do_property("battery", get,
+				POWER_SUPPLY_PROP_CAPACITY, value2);
+
+			if(charger->pdata->siop_level == 100 &&
+				(value1.intval == POWER_SUPPLY_STATUS_FULL ||
+				value2.intval >= 99) ) {
+				pr_info("%s vrect headroom set ROOM 2, siop = %d \n", __func__, charger->pdata->siop_level);
+				p9220_set_vrect_adjust(charger, P9220_HEADROOM_2);
+			} else if(charger->pdata->siop_level < 100){
+				pr_info("%s vrect headroom set ROOM 0, siop = %d \n", __func__, charger->pdata->siop_level);
+				p9220_set_vrect_adjust(charger, P9220_HEADROOM_0);
+			}
+			break;
 		case POWER_SUPPLY_PROP_CHARGE_OTG_CONTROL:
 			if(val->intval) {
 				charger->pdata->ic_on_mode = true;
@@ -1368,7 +1474,7 @@ static int p9220_chg_set_property(struct power_supply *psy,
 					msleep(250);
 				}
 			} else if (val->intval == WIRELESS_VOUT_CV_CALL) {
-				p9220_set_vrect_adjust(charger, P9220_HEADROOM_2);
+				p9220_set_vrect_adjust(charger, P9220_HEADROOM_3);
 				msleep(500);
 				p9220_set_vout(charger, P9220_VOUT_CV_CALL);
 				msleep(500);
@@ -1376,7 +1482,7 @@ static int p9220_chg_set_property(struct power_supply *psy,
 				pr_info("%s: Wireless Vout forced set to %dmV\n",
 								__func__, charger->pdata->wpc_cv_call_vout);
 			} else if (val->intval == WIRELESS_VOUT_CC_CALL) {
-				p9220_set_vrect_adjust(charger, P9220_HEADROOM_2);
+				p9220_set_vrect_adjust(charger, P9220_HEADROOM_3);
 				msleep(500);
 				p9220_set_vout(charger, P9220_VOUT_CC_CALL);
 				msleep(500);
@@ -1422,6 +1528,18 @@ static int p9220_chg_set_property(struct power_supply *psy,
 			} else if(val->intval == WIRELESS_VRECT_ADJ_OFF) {
 				pr_info("%s: vrect adjust to have small headroom \n",__func__);
 				p9220_set_vrect_adjust(charger, P9220_HEADROOM_0);
+			}  else if(val->intval == WIRELESS_VRECT_ADJ_ROOM_0) {
+				pr_info("%s: vrect adjust to have headroom 0 \n",__func__);
+				p9220_set_vrect_adjust(charger, P9220_HEADROOM_0);
+			}  else if(val->intval == WIRELESS_VRECT_ADJ_ROOM_1) {
+				pr_info("%s: vrect adjust to have headroom 1 \n",__func__);
+				p9220_set_vrect_adjust(charger, P9220_HEADROOM_1);
+			}  else if(val->intval == WIRELESS_VRECT_ADJ_ROOM_2) {
+				pr_info("%s: vrect adjust to have headroom 2 \n",__func__);
+				p9220_set_vrect_adjust(charger, P9220_HEADROOM_2);
+			}  else if(val->intval == WIRELESS_VRECT_ADJ_ROOM_3) {
+				pr_info("%s: vrect adjust to have headroom 3 \n",__func__);
+				p9220_set_vrect_adjust(charger, P9220_HEADROOM_3);
 			} else {
 				pr_info("%s: Unknown Command(%d)\n",__func__, val->intval);
 			}
@@ -1571,6 +1689,11 @@ static void p9220_wpc_isr_work(struct work_struct *work)
 	int ret;
 	int i;
 	union power_supply_propval value;
+
+	if (!charger->wc_w_state) {
+		pr_info("%s: charger->wc_w_state is 0. exit wpc_isr_work.\n",__func__);
+		return;
+	}
 
 	wake_lock(&charger->wpc_wake_lock);
 	pr_info("%s\n",__func__);

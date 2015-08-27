@@ -234,6 +234,7 @@ struct sec_battery_info {
 #endif
 #if defined(CONFIG_WIRELESS_CHARGER_INBATTERY) || defined(CONFIG_WIRELESS_CHARGER_HIGH_VOLTAGE)
 	int cc_cv_mode;
+	bool full_mode;
 #endif
 #if defined(CONFIG_CALC_TIME_TO_FULL)
 	int timetofull;

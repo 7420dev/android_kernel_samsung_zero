@@ -5180,7 +5180,7 @@ static void exynos7_devfreq_thermal_event(struct devfreq_thermal_work *work)
 static int mif_thermal_polling_period[][4] = {
 	/* Freq		2		3		4	*/
 	{400000,	5000,	1000,	100},
-	{1000000,	500,	100,	100},
+	{1000000,	100,	100,	100},
 	{2100000,	100,	100,	100},
 };
 

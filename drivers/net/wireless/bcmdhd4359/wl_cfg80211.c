@@ -24,7 +24,7 @@
  *
  * <<Broadcom-WL-IPTag/Open:>>
  *
- * $Id: wl_cfg80211.c 568879 2015-07-06 09:36:56Z $
+ * $Id: wl_cfg80211.c 570752 2015-07-13 10:57:34Z $
  */
 /* */
 #include <typedefs.h>
@@ -83,6 +83,10 @@
 #ifdef BCMPCIE
 #include <dhd_flowring.h>
 #endif
+
+#ifdef DHDTCPACK_SUPPRESS
+#include <dhd_ip.h>
+#endif /* DHDTCPACK_SUPPRESS */
 
 #ifdef WL11U
 #if !defined(WL_ENABLE_P2P_IF) && !defined(WL_CFG80211_P2P_DEV_IF)
@@ -8320,6 +8324,13 @@ wl_cfg80211_start_ap(
 		if (err) {
 			WL_ERR(("%s: Disabling NDO Failed %d\n", __FUNCTION__, err));
 		}
+#if defined(BCMPCIE) && defined(DHDTCPACK_SUPPRESS) && \
+	defined(DHDTCPACK_SUPPRESS_STAP2P_ONLY)
+		if (dhd->tcpack_sup_mode != TCPACK_SUP_OFF) {
+			WL_DBG(("Disable TCP ACK Suppression for SoftAP\n"));
+			dhd_tcpack_suppress_set(dhd, TCPACK_SUP_OFF);
+		}
+#endif /* BCMPCIE && DHDTCPACK_SUPPRESS && DHDTCPACK_SUPPRESS_STAP2P_ONLY */
 	} else {
 		/* only AP or GO role need to be handled here. */
 		err = -EINVAL;
@@ -14152,6 +14163,8 @@ _Pragma("GCC diagnostic pop")
 	if (wl_scan_timeout_dbg_enabled)
 		wl_scan_timeout_dbg_clear();
 #endif /* CUSTOMER_HW4 && DHD_DEBUG */
+
+	cfg->disable_roam_event = false;
 
 	DNGL_FUNC(dhd_cfg80211_down, (cfg));
 

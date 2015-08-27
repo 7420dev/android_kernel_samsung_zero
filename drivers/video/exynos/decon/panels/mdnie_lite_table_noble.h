@@ -1,7 +1,7 @@
 #ifndef __MDNIE_TABLE_H__
 #define __MDNIE_TABLE_H__
 
-/* 2015.07.01 */
+/* 2015.07.20 */
 
 /* SCR Position can be different each panel */
 #define MDNIE_RED_R		34		/* ASCR_WIDE_CR[7:0] */
@@ -315,9 +315,9 @@ static unsigned char GRAYSCALE_NEGATIVE_1[] = {
 	0x96, //ascr_skin_Mr
 	0x96, //ascr_skin_Mg
 	0x96, //ascr_skin_Mb
-	0xff, //ascr_skin_Wr
-	0xff, //ascr_skin_Wg
-	0xff, //ascr_skin_Wb
+	0x00, //ascr_skin_Wr
+	0x00, //ascr_skin_Wg
+	0x00, //ascr_skin_Wb
 	0x4c, //ascr_Cr
 	0xb3, //ascr_Rr
 	0x4c, //ascr_Cg
