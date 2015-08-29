@@ -83,8 +83,6 @@ struct sec_battery_info {
 	int current_avg;		/* average current (mA) */
 	int current_max;		/* input current limit (mA) */
 	int current_adc;
-	int current_isys_now;	/* isys current (mA) */
-	int current_isys_avg;	/* isys avg current (mA) */
 
 	unsigned int capacity;			/* SOC (%) */
 
@@ -134,9 +132,6 @@ struct sec_battery_info {
 
 	/* chg temperature check */
 	bool chg_limit;
-
-	/* wpc temperature and pad status check */
-	bool pad_limit;
 
 	/* temperature check */
 	int temperature;	/* battery temperature */
@@ -207,12 +202,10 @@ struct sec_battery_info {
 	bool ignore_siop;
 	int r_siop_level;
 	int siop_level;
-	int siop_event;
 	int stability_test;
 	int eng_not_full_status;
 
 	bool skip_chg_temp_check;
-	bool skip_wpc_temp_check;
 #if defined(CONFIG_BATTERY_SWELLING_SELF_DISCHARGING)
 	bool factory_self_discharging_mode_on;
 	bool force_discharging;
@@ -232,9 +225,8 @@ struct sec_battery_info {
 #if defined(CONFIG_AFC_CHARGER_MODE)
 	char *hv_chg_name;
 #endif
-#if defined(CONFIG_WIRELESS_CHARGER_INBATTERY) || defined(CONFIG_WIRELESS_CHARGER_HIGH_VOLTAGE)
+#if defined(CONFIG_WIRELESS_CHARGER_INBATTERY)
 	int cc_cv_mode;
-	bool full_mode;
 #endif
 #if defined(CONFIG_CALC_TIME_TO_FULL)
 	int timetofull;
@@ -300,7 +292,6 @@ enum {
 	BATT_LP_CHARGING,
 	SIOP_ACTIVATED,
 	SIOP_LEVEL,
-	SIOP_EVENT,
 	BATT_CHARGING_SOURCE,
 	FG_REG_DUMP,
 	FG_RESET_CAP,
@@ -351,53 +342,22 @@ enum {
 	BATT_DISCHARGING_NTC_ADC,
 	BATT_SELF_DISCHARGING_CONTROL,
 #endif
-#if defined(CONFIG_WIRELESS_CHARGER_INBATTERY) || defined(CONFIG_WIRELESS_CHARGER_HIGH_VOLTAGE)
+#if defined(CONFIG_WIRELESS_CHARGER_INBATTERY)
 	BATT_INBAT_WIRELESS_CS100,
 #endif
 	HMT_TA_CONNECTED,
 	HMT_TA_CHARGE,
+#if defined(CONFIG_BATTERY_AGE_FORECAST)
 	FG_CYCLE,
 	FG_FULL_VOLTAGE,
-	FG_FULLCAPNOM,
+#endif
 #if defined(CONFIG_WIRELESS_CHARGER_THM)
 	BATT_WPC_TEMP,
 	BATT_WPC_TEMP_ADC,
 #endif
 #if defined(CONFIG_WIRELESS_FIRMWARE_UPDATE)
 	BATT_WIRELESS_FIRMWARE_UPDATE,
-	BATT_WIRELESS_OTP_FIRMWARE_RESULT,
-	BATT_WIRELESS_IC_GRADE,
-	BATT_WIRELESS_FIRMWARE_VER_BIN,
-	BATT_WIRELESS_FIRMWARE_VER,
-	BATT_WIRELESS_TX_FIRMWARE_RESULT,
-	BATT_WIRELESS_TX_FIRMWARE_VER,
-	BATT_TX_STATUS,
 #endif
-#if defined(CONFIG_WIRELESS_CHARGER_HIGH_VOLTAGE)
-	BATT_WIRELESS_VOUT,
-	BATT_WIRELESS_VRCT,
-	BATT_HV_WIRELESS_STATUS,
-	BATT_HV_WIRELESS_PAD_CTRL,
-#endif
-	BATT_TUNE_FLOAT_VOLTAGE,
-	BATT_TUNE_INPUT_CHARGE_CURRENT,
-	BATT_TUNE_FAST_CHARGE_CURRENT,
-	BATT_TUNE_UI_TERM_CURRENT_1ST,
-	BATT_TUNE_UI_TERM_CURRENT_2ND,
-	BATT_TUNE_TEMP_HIGH_EVENT,
-	BATT_TUNE_TEMP_HIGH_REC_EVENT,
-	BATT_TUNE_TEMP_LOW_EVENT,
-	BATT_TUNE_TEMP_LOW_REC_EVENT,
-	BATT_TUNE_TEMP_HIGH_NORMAL,
-	BATT_TUNE_TEMP_HIGH_REC_NORMAL,
-	BATT_TUNE_TEMP_LOW_NORMAL,
-	BATT_TUNE_TEMP_LOW_REC_NORMAL,
-	BATT_TUNE_CHG_TEMP_HIGH,
-	BATT_TUNE_CHG_TEMP_REC,
-	BATT_TUNE_CHG_LIMMIT_CURRENT,
-	BATT_TUNE_COIL_TEMP_HIGH,
-	BATT_TUNE_COIL_TEMP_REC,
-	BATT_TUNE_COIL_LIMMIT_CURRENT,
 };
 
 #ifdef CONFIG_OF
