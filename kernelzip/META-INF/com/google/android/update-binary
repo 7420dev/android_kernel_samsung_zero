@@ -62,9 +62,6 @@ rm -rf container/*KNOX*
 
 sed -i -e '/ro.securestorage.knox/c\ro.securestorage.knox=false' build.prop
 sed -i -e '/ro.securestorage.support/c\ro.securestorage.support=false' build.prop
-sed -i -e '/ro.config.timaversion/d' build.prop
-sed -i -e '/ro.config.tima/c\ro.config.tima=0' build.prop
-sed -i -e '/ro.config.knox/c\ro.config.knox=0' build.prop
 
 if [ ! -e /system/noble_egl_installed ]; then
 	ui_print " - installing new Graphics drivers"
