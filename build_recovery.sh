@@ -5,7 +5,7 @@ export RAMFS_SOURCE=`readlink -f $KERNELDIR/recovery`
 echo "kerneldir = $KERNELDIR"
 echo "ramfs_source = $RAMFS_SOURCE"
 
-RAMFS_TMP="/tmp/arter97-zeroflte-recovery"
+RAMFS_TMP="/tmp/arter97-exynos7420-recovery"
 
 echo "ramfs_tmp = $RAMFS_TMP"
 cd $KERNELDIR
