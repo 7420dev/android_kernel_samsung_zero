@@ -1,0 +1,6 @@
+if [[ ! -z $3 ]]; then
+	echo $3 > $2
+fi
+
+t=( `cat $2` )
+echo ${t[$1]}

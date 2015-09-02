@@ -1,13 +1,14 @@
-#!/sbin/busybox sh
+#!/res/busybox sh
 
 cat << CTAG
 
 {
     sections: [
-		`. /res/synapse/json.gen.big`,
-		`. /res/synapse/json.gen.little`,
-		`. /res/synapse/json.gen.gpu`,
-		`. /res/synapse/json.gen.bus`
+		`source /res/synapse/json.gen.big`,
+		`source /res/synapse/json.gen.little`,
+		`source /res/synapse/json.gen.gpu`,
+		`source /res/synapse/json.gen.bus`
+		`source /res/synapse/json.gen.audio`
     ]
 }
 CTAG

@@ -1,4 +1,4 @@
-#!/sbin/busybox sh
+#!/res/busybox sh
 
 readColour() {
 	P=/sys/class/mdnie/mdnie/controls/
