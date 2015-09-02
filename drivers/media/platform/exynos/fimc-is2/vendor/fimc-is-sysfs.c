@@ -60,6 +60,7 @@ static struct fimc_is_cam_info cam_infos[2];
 #endif
 
 extern bool force_caldata_dump;
+static bool check_ois_power = false;
 
 #ifdef CAMERA_SYSFS_V2
 int fimc_is_get_cam_info(struct fimc_is_cam_info **caminfo)
@@ -986,9 +987,11 @@ static ssize_t camera_ois_power_store(struct device *dev,
 	switch (buf[0]) {
 	case '0':
 		fimc_is_ois_gpio_off(sysfs_core);
+		check_ois_power = false;
 		break;
 	case '1':
 		fimc_is_ois_gpio_on(sysfs_core);
+		check_ois_power = true;
 		msleep(150);
 		break;
 	default:
@@ -1007,42 +1010,48 @@ static ssize_t camera_ois_selftest_show(struct device *dev,
 	int selftest_ret = 0;
 	long raw_data_x = 0, raw_data_y = 0;
 
-	fimc_is_ois_offset_test(sysfs_core, &raw_data_x, &raw_data_y);
-	msleep(50);
-	selftest_ret = fimc_is_ois_self_test(sysfs_core);
+	if (check_ois_power) {
+		fimc_is_ois_offset_test(sysfs_core, &raw_data_x, &raw_data_y);
+		msleep(50);
+		selftest_ret = fimc_is_ois_self_test(sysfs_core);
 
-	if (selftest_ret == 0x0) {
-		result_selftest = true;
+		if (selftest_ret == 0x0) {
+			result_selftest = true;
+		} else {
+			result_selftest = false;
+		}
+
+		if (abs(raw_data_x) > 35000 || abs(raw_data_y) > 35000)  {
+			result_offset = false;
+		} else {
+			result_offset = true;
+		}
+
+		if (result_offset && result_selftest) {
+			result_total = 0;
+		} else if (!result_offset && !result_selftest) {
+			result_total = 3;
+		} else if (!result_offset) {
+			result_total = 1;
+		} else if (!result_selftest) {
+			result_total = 2;
+		}
+
+		if (raw_data_x < 0 && raw_data_y < 0) {
+			return sprintf(buf, "%d,-%ld.%03ld,-%ld.%03ld\n", result_total, abs(raw_data_x /1000), abs(raw_data_x % 1000),
+				abs(raw_data_y /1000), abs(raw_data_y % 1000));
+		} else if (raw_data_x < 0) {
+			return sprintf(buf, "%d,-%ld.%03ld,%ld.%03ld\n", result_total, abs(raw_data_x /1000), abs(raw_data_x % 1000),
+				raw_data_y /1000, raw_data_y % 1000);
+		} else if (raw_data_y < 0) {
+			return sprintf(buf, "%d,%ld.%03ld,-%ld.%03ld\n", result_total, raw_data_x /1000, raw_data_x % 1000,
+				abs(raw_data_y /1000), abs(raw_data_y % 1000));
+		} else {
+			return sprintf(buf, "%d,%ld.%03ld,%ld.%03ld\n", result_total, raw_data_x /1000, raw_data_x % 1000,
+				raw_data_y /1000, raw_data_y % 1000);
+		}
 	} else {
-		result_selftest = false;
-	}
-
-	if (abs(raw_data_x) > 35000 || abs(raw_data_y) > 35000)  {
-		result_offset = false;
-	} else {
-		result_offset = true;
-	}
-
-	if (result_offset && result_selftest) {
-		result_total = 0;
-	} else if (!result_offset && !result_selftest) {
-		result_total = 3;
-	} else if (!result_offset) {
-		result_total = 1;
-	} else if (!result_selftest) {
-		result_total = 2;
-	}
-
-	if (raw_data_x < 0 && raw_data_y < 0) {
-		return sprintf(buf, "%d,-%ld.%03ld,-%ld.%03ld\n", result_total, abs(raw_data_x /1000), abs(raw_data_x % 1000),
-			abs(raw_data_y /1000), abs(raw_data_y % 1000));
-	} else if (raw_data_x < 0) {
-		return sprintf(buf, "%d,-%ld.%03ld,%ld.%03ld\n", result_total, abs(raw_data_x /1000), abs(raw_data_x % 1000),
-			raw_data_y /1000, raw_data_y % 1000);
-	} else if (raw_data_y < 0) {
-		return sprintf(buf, "%d,%ld.%03ld,-%ld.%03ld\n", result_total, raw_data_x /1000, raw_data_x % 1000,
-			abs(raw_data_y /1000), abs(raw_data_y % 1000));
-	} else {
+		err("OIS power is not enabled.");
 		return sprintf(buf, "%d,%ld.%03ld,%ld.%03ld\n", result_total, raw_data_x /1000, raw_data_x % 1000,
 			raw_data_y /1000, raw_data_y % 1000);
 	}
@@ -1053,18 +1062,24 @@ static ssize_t camera_ois_rawdata_show(struct device *dev,
 {
 	long raw_data_x = 0, raw_data_y = 0;
 
-	fimc_is_ois_get_offset_data(sysfs_core, &raw_data_x, &raw_data_y);
+	if (check_ois_power) {
+		fimc_is_ois_get_offset_data(sysfs_core, &raw_data_x, &raw_data_y);
 
-	if (raw_data_x < 0 && raw_data_y < 0) {
-		return sprintf(buf, "-%ld.%03ld,-%ld.%03ld\n", abs(raw_data_x /1000), abs(raw_data_x % 1000),
-			abs(raw_data_y /1000), abs(raw_data_y % 1000));
-	} else if (raw_data_x < 0) {
-		return sprintf(buf, "-%ld.%03ld,%ld.%03ld\n", abs(raw_data_x /1000), abs(raw_data_x % 1000),
-			raw_data_y /1000, raw_data_y % 1000);
-	} else if (raw_data_y < 0) {
-		return sprintf(buf, "%ld.%03ld,-%ld.%03ld\n", raw_data_x /1000, raw_data_x % 1000,
-			abs(raw_data_y /1000), abs(raw_data_y % 1000));
+		if (raw_data_x < 0 && raw_data_y < 0) {
+			return sprintf(buf, "-%ld.%03ld,-%ld.%03ld\n", abs(raw_data_x /1000), abs(raw_data_x % 1000),
+				abs(raw_data_y /1000), abs(raw_data_y % 1000));
+		} else if (raw_data_x < 0) {
+			return sprintf(buf, "-%ld.%03ld,%ld.%03ld\n", abs(raw_data_x /1000), abs(raw_data_x % 1000),
+				raw_data_y /1000, raw_data_y % 1000);
+		} else if (raw_data_y < 0) {
+			return sprintf(buf, "%ld.%03ld,-%ld.%03ld\n", raw_data_x /1000, raw_data_x % 1000,
+				abs(raw_data_y /1000), abs(raw_data_y % 1000));
+		} else {
+			return sprintf(buf, "%ld.%03ld,%ld.%03ld\n", raw_data_x /1000, raw_data_x % 1000,
+				raw_data_y /1000, raw_data_y % 1000);
+		}
 	} else {
+		err("OIS power is not enabled.");
 		return sprintf(buf, "%ld.%03ld,%ld.%03ld\n", raw_data_x /1000, raw_data_x % 1000,
 			raw_data_y /1000, raw_data_y % 1000);
 	}
@@ -1096,9 +1111,14 @@ static ssize_t camera_ois_diff_show(struct device *dev,
 	int result = 0;
 	int x_diff = 0, y_diff = 0;
 
-	result = fimc_is_ois_diff_test(sysfs_core, &x_diff, &y_diff);
+	if (check_ois_power) {
+		result = fimc_is_ois_diff_test(sysfs_core, &x_diff, &y_diff);
 
-	return sprintf(buf, "%d,%d,%d\n", result == true ? 0 : 1, x_diff, y_diff);
+		return sprintf(buf, "%d,%d,%d\n", result == true ? 0 : 1, x_diff, y_diff);
+	} else {
+		err("OIS power is not enabled.");
+		return sprintf(buf, "%d,%d,%d\n", 0, x_diff, y_diff);
+	}
 }
 
 static ssize_t camera_ois_fw_update_show(struct device *dev,

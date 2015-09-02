@@ -20,11 +20,13 @@
 
 #if defined (CONFIG_SENSORS_SSP_NOBLELTE) \
 	|| defined (CONFIG_SENSORS_SSP_ZENLTE) /* Noble or Zen */
-#define SSP_FIRMWARE_REVISION_STM	15051500
+#define SSP_FIRMWARE_REVISION_STM	15070600
 #elif defined (CONFIG_SENSORS_SSP_VLTE) /* V */
-#define SSP_FIRMWARE_REVISION_STM	15051900
+#define SSP_FIRMWARE_REVISION_STM	15070200
+#elif defined (CONFIG_SENSORS_SSP_ROYCELTE) /* Royce */
+#define SSP_FIRMWARE_REVISION_STM	15070900
 #else /* Zero */
-#define SSP_FIRMWARE_REVISION_STM	15050700
+#define SSP_FIRMWARE_REVISION_STM	15071700
 #endif
 
 #define SSP_INVALID_REVISION            99999
@@ -39,6 +41,8 @@
 #define BL_FW_NAME			"ssp_stm_noble.fw"
 #elif defined (CONFIG_SENSORS_SSP_VLTE) /* V */
 #define BL_FW_NAME			"ssp_stm_v.fw"
+#elif defined (CONFIG_SENSORS_SSP_ROYCELTE)	/* Royce */
+#define BL_FW_NAME			"ssp_stm_royce.fw"
 #else /* Zero */
 #define BL_FW_NAME			"ssp_stm.fw"
 #endif

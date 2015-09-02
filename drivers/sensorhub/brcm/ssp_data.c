@@ -40,6 +40,7 @@ static void generate_data(struct ssp_data *data,
 #ifdef CONFIG_SENSORS_SSP_SX9306
 		&& (iSensorData != GRIP_SENSOR)
 #endif
+		&& (iSensorData != TILT_DETECTOR)
 		) {
 		while ((move_timestamp * 10 + data->adDelayBuf[iSensorData] * 13) < (timestamp * 10)) {
 			move_timestamp += data->adDelayBuf[iSensorData];
@@ -223,6 +224,13 @@ static void get_shake_cam_sensordata(char *pchRcvDataFrame, int *iDataIdx,
 	*iDataIdx += 1;
 }
 
+static void get_tilt_sensordata(char *pchRcvDataFrame, int *iDataIdx,
+	struct sensor_value *sensorsdata)
+{
+	memcpy(sensorsdata, pchRcvDataFrame + *iDataIdx, 1);
+	*iDataIdx += 1;
+}
+
 int handle_big_data(struct ssp_data *data, char *pchRcvDataFrame, int *pDataIdx) {
 	u8 bigType = 0;
 	struct ssp_big *big = kzalloc(sizeof(*big), GFP_KERNEL);
@@ -308,7 +316,8 @@ int parse_dataframe(struct ssp_data *data, char *pchRcvDataFrame, int iLength)
 				if (sensortime.irq_diff > 2500000)
 					data->report_sensor_data[iSensorData](data, &sensorsdata);
 				else if ((iSensorData == PROXIMITY_SENSOR) || (iSensorData == PROXIMITY_RAW)
-						|| (iSensorData == GESTURE_SENSOR) || (iSensorData == SIG_MOTION_SENSOR))
+						|| (iSensorData == GESTURE_SENSOR) || (iSensorData == SIG_MOTION_SENSOR)
+						|| (iSensorData == TILT_DETECTOR))
 					data->report_sensor_data[iSensorData](data, &sensorsdata);
 				else
 					pr_err("[SSP]: %s irq_diff is under 1msec (%d)\n", __func__, iSensorData);
@@ -393,6 +402,7 @@ void initialize_function_pointer(struct ssp_data *data)
 #ifdef CONFIG_SENSORS_SSP_INTERRUPT_GYRO_SENSOR
 	data->get_sensor_data[INTERRUPT_GYRO_SENSOR] = get_3axis_sensordata;
 #endif
+	data->get_sensor_data[TILT_DETECTOR] = get_tilt_sensordata;
 
 	data->report_sensor_data[ACCELEROMETER_SENSOR] = report_acc_data;
 	data->report_sensor_data[GYROSCOPE_SENSOR] = report_gyro_data;
@@ -424,6 +434,7 @@ void initialize_function_pointer(struct ssp_data *data)
 #ifdef CONFIG_SENSORS_SSP_INTERRUPT_GYRO_SENSOR
 	data->report_sensor_data[INTERRUPT_GYRO_SENSOR] = report_interrupt_gyro_data;
 #endif
+	data->report_sensor_data[TILT_DETECTOR] = report_tilt_data;
 
 	data->ssp_big_task[BIG_TYPE_DUMP] = ssp_dump_task;
 	data->ssp_big_task[BIG_TYPE_READ_LIB] = ssp_read_big_library_task;

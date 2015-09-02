@@ -1,9 +1,9 @@
 /*
  * Samsung Mobile VE Group.
  *
- * drivers/battery/sec_batt_selfdchg_exynos7420_cs_use.c
+ * drivers/battery/sec_batt_selfdchg_cs_use.c
  *
- * Drivers for samsung batter self discharging by using current source, with no IC.
+ * Drivers for samsung battery self discharging by using current source, with no IC.
  * For only Exynos 7420
  *
  * Copyright (C) 2015, Samsung Electronics.
@@ -53,10 +53,12 @@
 #define SDCHG_BATT_CHECK_DELAY_NORMAL		60
 #define SDCHG_BATT_CHECK_DELAY_IMMINENT	60
 #define SDCHG_TEMP_FOR_BATT_CHECK_DELAY	400
+#define SDCHG_DISCHARGING_DELAY	30
 #else
 #define SDCHG_BATT_CHECK_DELAY_NORMAL		600
 #define SDCHG_BATT_CHECK_DELAY_IMMINENT	300
 #define SDCHG_TEMP_FOR_BATT_CHECK_DELAY	400
+#define SDCHG_DISCHARGING_DELAY	60
 #endif
 #define SDCHG_DISCHARGING_FIRST_START_DELAY	1
 /******************************************/
@@ -74,6 +76,7 @@ static char sdchg_type[] = "sdchg_cs";
 
 /*******************************************************************/
 /* Define this function in accordance with the specification of each Current Source    */
+/* Don't use this function! This function will be changed to function pointer type.      */
 extern int sdchg_current_source_enable(void);
 extern int sdchg_current_source_disable(void);
 /*******************************************************************/
@@ -127,7 +130,7 @@ static bool sdchg_ta_attach(struct sec_battery_info *battery)
 	return false;
 }
 
-static void sdchg_exynos7420_cs_use_monitor(void *arg,
+static void sdchg_cs_use_monitor(void *arg,
 					__kernel_time_t curr_sec, bool skip_monitor)
 {
 	struct sdchg_info_nochip_t *info = sdchg_info->nochip;
@@ -152,37 +155,64 @@ static void sdchg_exynos7420_cs_use_monitor(void *arg,
 
 	if (skip_monitor) {
 #ifdef SDCHG_CHECK_TYPE_SOC
-		value.intval = SEC_BATTERY_CURRENT_MA;
-		psy_do_property(battery->pdata->fuelgauge_name, get,
-			POWER_SUPPLY_PROP_CURRENT_NOW, value);
-		battcond = value.intval;
+#if 0
+		/**************************************/
+		/* Example Code ( If you need, 
+			 Define this code in accordance 
+			 with the specification of each BB platform */
+		{
+			union power_supply_propval value;
+
+			/* To get SOC value (NOT raw SOC), need to reset value */
+			value.intval = 0;
+			psy_do_property(battery->pdata->fuelgauge_name, get,
+					POWER_SUPPLY_PROP_CAPACITY, value);
+
+			battcond = value.intval;
+		}
+		/**************************************/
+#else
+#error "SDCHG : Implement SOC Read Code!!"
+#endif
 #else
 		battcond = battery->voltage_now;
 #endif
 	}
 	else {
 #ifdef SDCHG_CHECK_TYPE_SOC
-		battcond = (short)battery->current_now;
+#if 0
+		/**************************************/
+		/* Example Code ( If you need, 
+			 Define this code in accordance 
+			 with the specification of each BB platform */
+
+		battcond = battery->capacity;
+		/**************************************/
 #else
-		battcond = (short)battery->voltage_avg;
+#error "SDCHG : Implement SOC Read Code!!"
+#endif
+#else
+		battcond = battery->voltage_avg;
 #endif
 	}
 
 	/******************************************/
 
-	if ( temperature >= sdchg_info->temp_start 
+	if ( temperature >= (int)sdchg_info->temp_start
 			&& battcond >= SDCHG_BATTCOND_START)
 	{
 		/******************************************/
 		if (!info->wake_lock_set) {
+			/*	cs source don't need wake_lock
 			wake_lock(&info->wake_lock);
+			*/
 			info->wake_lock_set = true;
 		}
 		/******************************************/
 		info->need_state = SDCHG_STATE_SET;
 	}
 	/******************************************/
-	else if (temperature <= sdchg_info->temp_end 
+	else if (temperature <= (int)sdchg_info->temp_end
 			|| battcond <= SDCHG_BATTCOND_END)
 	{
 		info->need_state = SDCHG_STATE_NONE;
@@ -211,10 +241,8 @@ static void sdchg_exynos7420_cs_use_monitor(void *arg,
 
 		if (info->set_state == SDCHG_STATE_NONE) {	// none -> discharing
 			{
-				//need_set_alarm = info->state_machine_run = true;
-				//set_alarm_time = SDCHG_DISCHARGING_DELAY;
-				need_set_alarm = false; // in discharing, according to original monitor work time
-				info->state_machine_run = true;
+				need_set_alarm = info->state_machine_run = true;
+				set_alarm_time = SDCHG_DISCHARGING_DELAY;
 			}
 		} else {		// prev : discharging
 			if (info->need_state == SDCHG_STATE_NONE) {	// discharging -> none
@@ -261,10 +289,8 @@ static void sdchg_exynos7420_cs_use_monitor(void *arg,
 #endif	// #ifdef SDCHG_STATE_MACHINE_RETRY_AT_END_COND
 				}
 			} else {	// discharging -> discharging
-				//need_set_alarm = info->state_machine_run = true;
-				//set_alarm_time = SDCHG_DISCHARGING_DELAY;
-				need_set_alarm = false; // in discharing, according to original monitor work time
-				info->state_machine_run = true;
+				need_set_alarm = info->state_machine_run = true;
+				set_alarm_time = SDCHG_DISCHARGING_DELAY;
 			}
 		}
 	}
@@ -345,8 +371,10 @@ static void sdchg_exynos7420_cs_use_monitor(void *arg,
 	if (info->set_state == SDCHG_STATE_NONE)
 	{
 		if (info->wake_lock_set) {
-			wake_lock_timeout(&info->wake_lock, HZ * 10);
+			/*	cs source don't need wake_lock
+			wake_lock_timeout(&info->end_wake_lock, HZ * 5);
 			wake_unlock(&info->wake_lock);
+			*/
 			info->wake_lock_set = false;
 		}
 	}
@@ -403,12 +431,13 @@ static void init_info_data(struct sdchg_info_nochip_t *info)
 	info->need_state = SDCHG_STATE_NONE;
 	info->set_state = SDCHG_STATE_NONE;
 
+	/*	cs source don't need wake_lock
 	wake_lock_init(&info->wake_lock, WAKE_LOCK_SUSPEND,
 		   "sdchg");
-	info->wake_lock_set =false;
-
 	wake_lock_init(&info->end_wake_lock, WAKE_LOCK_SUSPEND,
 		   "sdchg_end");
+	*/
+	info->wake_lock_set =false;
 
 	info->state_machine_run = false;
 
@@ -429,7 +458,7 @@ static void remove_info_data(struct sdchg_info_nochip_t *info)
 }
 
 /*************************************************************************/
-static void sdchg_exynos7420_cs_use_parse_dt(struct device *dev)
+static void sdchg_cs_use_parse_dt(struct device *dev)
 {
 	struct device_node *np = dev->of_node;
 	struct device_node *data_np;
@@ -498,7 +527,7 @@ static void sdchg_exynos7420_cs_use_parse_dt(struct device *dev)
  }
 
 /* prev func : sec_bat_self_discharging_check */
- static void sdchg_exynos7420_cs_use_adc_check(void *arg)
+ static void sdchg_cs_use_adc_check(void *arg)
  {
 	struct sec_battery_info *battery = (struct sec_battery_info *)arg;
  
@@ -518,7 +547,7 @@ static void sdchg_exynos7420_cs_use_parse_dt(struct device *dev)
 
 
 /* prev func : sec_bat_self_discharging_ntc_check */
-static void sdchg_exynos7420_cs_use_ntc_check(void *arg)
+static void sdchg_cs_use_ntc_check(void *arg)
 {
 	struct sec_battery_info *battery = (struct sec_battery_info *)arg;
 
@@ -532,7 +561,7 @@ static void sdchg_exynos7420_cs_use_ntc_check(void *arg)
 }
 
  /* prev func : sec_bat_self_discharging_control */
- static void sdchg_exynos7420_cs_use_force_control(void *arg, bool dis_en)
+ static void sdchg_cs_use_force_control(void *arg, bool dis_en)
  {
 	 struct sec_battery_info *battery = (struct sec_battery_info *)arg;
  
@@ -546,12 +575,12 @@ static void sdchg_exynos7420_cs_use_ntc_check(void *arg)
  }
 
  /* prev func : sec_bat_discharging_check */
- static void sdchg_exynos7420_cs_use_discharging_check(void *arg)
+ static void sdchg_cs_use_discharging_check(void *arg)
  {
 	 return;
  }
  
-static int sdchg_exynos7420_cs_use_force_check(void *arg)
+static int sdchg_cs_use_force_check(void *arg)
 {
 	struct sec_battery_info *battery = (struct sec_battery_info *)arg;
 
@@ -560,7 +589,7 @@ static int sdchg_exynos7420_cs_use_force_check(void *arg)
 
 
 
-static int sdchg_exynos7420_cs_use_probe(void *battery)
+static int sdchg_cs_use_probe(void *battery)
 {
 	int ret = 0;
 	struct sdchg_info_nochip_t *info = sdchg_info->nochip;
@@ -575,7 +604,7 @@ static int sdchg_exynos7420_cs_use_probe(void *battery)
 	return ret;
 }
 
-static int sdchg_exynos7420_cs_use_remove(void)
+static int sdchg_cs_use_remove(void)
 {
 	struct sdchg_info_nochip_t *info = sdchg_info->nochip;
 	pr_info("[SDCHG][%s] ++\n", __func__);
@@ -585,14 +614,15 @@ static int sdchg_exynos7420_cs_use_remove(void)
 
 		current_source_set(info);
 		info->state_machine_run = false;
-	
+
 		/**************************************/
 		if (info->wake_lock_set) {
-			/* if you active this code, use additional lock for wake_lock_set */
+			/*	cs source don't need wake_lock
 			wake_unlock(&info->wake_lock);
+			*/
 			info->wake_lock_set = false;
 		}
-		/**************************************/		
+		/**************************************/
 	}
 
 	/* need to run after sdchg_policy_set */
@@ -603,7 +633,7 @@ static int sdchg_exynos7420_cs_use_remove(void)
 	return 0;
 }
 
- static int __init sdchg_exynos7420_cs_use_init(void)
+ static int __init sdchg_cs_use_init(void)
  {
 	 int ret;
 
@@ -626,18 +656,18 @@ static int sdchg_exynos7420_cs_use_remove(void)
 	}
 	sdchg_info->nochip->pinfo = sdchg_info;
 
-	sdchg_info->nochip->sdchg_monitor = sdchg_exynos7420_cs_use_monitor;
+	sdchg_info->nochip->sdchg_monitor = sdchg_cs_use_monitor;
 	/*****************************************/
-	sdchg_info->sdchg_probe = sdchg_exynos7420_cs_use_probe;
-	sdchg_info->sdchg_remove = sdchg_exynos7420_cs_use_remove;
-	sdchg_info->sdchg_parse_dt = sdchg_exynos7420_cs_use_parse_dt;
+	sdchg_info->sdchg_probe = sdchg_cs_use_probe;
+	sdchg_info->sdchg_remove = sdchg_cs_use_remove;
+	sdchg_info->sdchg_parse_dt = sdchg_cs_use_parse_dt;
 
-	sdchg_info->sdchg_adc_check = sdchg_exynos7420_cs_use_adc_check;
-	sdchg_info->sdchg_ntc_check = sdchg_exynos7420_cs_use_ntc_check;
-	sdchg_info->sdchg_force_control = sdchg_exynos7420_cs_use_force_control;
-	sdchg_info->sdchg_discharging_check = sdchg_exynos7420_cs_use_discharging_check;
+	sdchg_info->sdchg_adc_check = sdchg_cs_use_adc_check;
+	sdchg_info->sdchg_ntc_check = sdchg_cs_use_ntc_check;
+	sdchg_info->sdchg_force_control = sdchg_cs_use_force_control;
+	sdchg_info->sdchg_discharging_check = sdchg_cs_use_discharging_check;
 
-	sdchg_info->sdchg_force_check = sdchg_exynos7420_cs_use_force_check;
+	sdchg_info->sdchg_force_check = sdchg_cs_use_force_check;
 	/*****************************************/
 
 	list_add(&sdchg_info->info_list, &sdchg_info_head);
@@ -658,7 +688,7 @@ fail_out:
  }
 
 
-static void __exit sdchg_exynos7420_cs_use_exit(void)
+static void __exit sdchg_cs_use_exit(void)
 {
 	pr_info("[SDCHG][%s] ++\n", __func__);
 
@@ -675,8 +705,8 @@ static void __exit sdchg_exynos7420_cs_use_exit(void)
 	return;
 }
 
-arch_initcall(sdchg_exynos7420_cs_use_init);
-module_exit(sdchg_exynos7420_cs_use_exit);
+arch_initcall(sdchg_cs_use_init);
+module_exit(sdchg_cs_use_exit);
 
 MODULE_AUTHOR("jeeon.park@samsung.com yonghune.an@samsung.com");
 MODULE_DESCRIPTION("Samsung Electronics Co. Battery Self Discharging \

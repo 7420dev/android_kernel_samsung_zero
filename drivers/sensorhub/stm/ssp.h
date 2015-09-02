@@ -213,6 +213,7 @@ enum {
 	LIGHT_IR_SENSOR = 24,
 #endif
 	INTERRUPT_GYRO_SENSOR,
+	TILT_DETECTOR,
 	META_SENSOR,
 	SENSOR_MAX,
 };
@@ -303,6 +304,9 @@ struct sensor_value {
 		};
 		struct { /* significant motion */
 			u8 sig_motion;
+		};
+		struct { /* tilt detector */
+			u8 tilt_detector;
 		};
 		struct meta_data_event { /* meta data */
 			s32 what;

@@ -317,6 +317,7 @@ enum {
 #ifdef CONFIG_SENSORS_SSP_INTERRUPT_GYRO_SENSOR
 	INTERRUPT_GYRO_SENSOR = 25,
 #endif
+	TILT_DETECTOR,
 	SENSOR_MAX,
 };
 
@@ -389,6 +390,7 @@ struct sensor_value {
 #endif
 		s32 pressure[3];
 		u32 step_diff;
+		u8 tilt_detector;
 		struct meta_data_event meta_data;
 	};
 	u64 timestamp;
@@ -490,12 +492,14 @@ struct ssp_data {
 	struct iio_dev *game_rot_indio_dev;
 	struct iio_dev *step_det_indio_dev;
 	struct iio_dev *pressure_indio_dev;
+	struct iio_dev *tilt_indio_dev;
 	struct iio_trigger *accel_trig;
 	struct iio_trigger *gyro_trig;
 	struct iio_trigger *rot_trig;
 	struct iio_trigger *game_rot_trig;
 	struct iio_trigger *step_det_trig;
 	struct iio_trigger *pressure_det_trig;
+	struct iio_trigger *tilt_trig;
 
 	struct input_dev *light_input_dev;
 #ifdef CONFIG_SENSORS_SSP_IRDATA_FOR_CAMERA
@@ -805,6 +809,7 @@ int print_mcu_debug(char *, int *, int);
 void report_temp_humidity_data(struct ssp_data *, struct sensor_value *);
 void report_shake_cam_data(struct ssp_data *, struct sensor_value *);
 void report_bulk_comp_data(struct ssp_data *data);
+void report_tilt_data(struct ssp_data *, struct sensor_value *);
 unsigned int get_module_rev(struct ssp_data *data);
 void reset_mcu(struct ssp_data *);
 void convert_acc_data(s16 *);

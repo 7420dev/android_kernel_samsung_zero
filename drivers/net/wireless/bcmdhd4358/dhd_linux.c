@@ -22,7 +22,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_linux.c 552793 2015-04-28 04:09:31Z $
+ * $Id: dhd_linux.c 561630 2015-06-05 13:06:05Z $
  */
 
 #include <typedefs.h>
@@ -2379,7 +2379,7 @@ dhd_sendpkt(dhd_pub_t *dhdp, int ifidx, void *pktbuf)
 
 #if defined(DHD_USE_IDLECOUNT) && defined(BCMPCIE)
 	if (bus_wakeup(dhdp) == TRUE) {
-		DHD_ERROR(("%s : pcie is still in suspend state!! bus_wakeup\n", __FUNCTION__));
+		DHD_ERROR(("%s : pcie is still in suspend state!!\n", __FUNCTION__));
 		PKTFREE(dhdp->osh, pktbuf, TRUE);
 		return -EBUSY;
 	}
@@ -2387,7 +2387,7 @@ dhd_sendpkt(dhd_pub_t *dhdp, int ifidx, void *pktbuf)
 
 #ifdef PCIE_FULL_DONGLE
 	if (dhdp->busstate == DHD_BUS_SUSPEND) {
-		DHD_ERROR(("%s : pcie is still in suspend state!! busstate\n", __FUNCTION__));
+		DHD_ERROR(("%s : pcie is still in suspend state!!\n", __FUNCTION__));
 		PKTFREE(dhdp->osh, pktbuf, TRUE);
 		return -EBUSY;
 	}
@@ -2530,7 +2530,7 @@ dhd_start_xmit(struct sk_buff *skb, struct net_device *net)
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
 #if defined(DHD_USE_IDLECOUNT) && defined(BCMPCIE)
 	if (bus_wakeup(&dhd->pub) == TRUE) {
-		DHD_ERROR(("%s : pcie is still in suspend state!! bus_wakeup\n", __FUNCTION__));
+		DHD_ERROR(("%s : pcie is still in suspend state!!\n", __FUNCTION__));
 		dev_kfree_skb(skb);
 		ifp = DHD_DEV_IFP(net);
 		ifp->stats.tx_dropped++;
@@ -2543,7 +2543,7 @@ dhd_start_xmit(struct sk_buff *skb, struct net_device *net)
 	dhd->pub.tx_in_progress = TRUE;
 #ifdef PCIE_FULL_DONGLE
 	if (dhd->pub.busstate == DHD_BUS_SUSPEND) {
-		DHD_ERROR(("%s : pcie is still in suspend state!! busstate\n", __FUNCTION__));
+		DHD_ERROR(("%s : pcie is still in suspend state!!\n", __FUNCTION__));
 		dev_kfree_skb(skb);
 		ifp = DHD_DEV_IFP(net);
 		ifp->stats.tx_dropped++;
@@ -3483,11 +3483,6 @@ dhd_rxf_thread(void *data)
 		setScheduler(current, SCHED_FIFO, &param);
 	}
 
-	DAEMONIZE("dhd_rxf");
-	/* DHD_OS_WAKE_LOCK is called in dhd_sched_dpc[dhd_linux.c] down below  */
-
-	/*  signal: thread has started */
-	complete(&tsk->completed);
 #if defined(CUSTOMER_HW4) && defined(ARGOS_CPU_SCHEDULER)
 	if (!zalloc_cpumask_var(&dhd->pub.rxf_affinity_cpu_mask, GFP_KERNEL)) {
 		DHD_ERROR(("rxthread zalloc_cpumask_var error\n"));
@@ -5911,6 +5906,11 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 #ifdef AMPDU_VO_ENABLE
 	struct ampdu_tid_control tid;
 #endif
+#if defined(PROP_TXSTATUS)
+#if defined(CUSTOMER_HW4) && defined(USE_WFA_CERT_CONF)
+	uint32 proptx = 0;
+#endif /* CUSTOMER_HW4 && PROP_TXSTATUS */
+#endif /* PROP_TXSTATUS */
 #ifdef USE_WL_FRAMEBURST
 	uint32 frameburst = 1;
 #endif /* USE_WL_FRAMEBURST */
@@ -6122,7 +6122,9 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 
 #if defined(ROAM_ENABLE) || defined(DISABLE_BUILTIN_ROAM)
 #if defined(CUSTOMER_HW4) && defined(USE_WFA_CERT_CONF)
-	roamvar = sec_get_param(dhd, SET_PARAM_ROAMOFF);
+	if (sec_get_param_wfa_cert(dhd, SET_PARAM_ROAMOFF, &roamvar) == BCME_OK) {
+		DHD_ERROR(("%s: read roam_off param =%d\n", __FUNCTION__, roamvar));
+	}
 #endif /* CUSTOMER_HW4 && USE_WFA_CERT_CONF */
 	/* Disable built-in roaming to allowed ext supplicant to take care of roaming */
 	bcm_mkiovar("roam_off", (char *)&roamvar, 4, iovbuf, sizeof(iovbuf));
@@ -6207,7 +6209,9 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 
 
 #if defined(CUSTOMER_HW4) && defined(USE_WFA_CERT_CONF)
-	glom = sec_get_param(dhd, SET_PARAM_BUS_TXGLOM_MODE);
+	if (sec_get_param_wfa_cert(dhd, SET_PARAM_BUS_TXGLOM_MODE, &glom) == BCME_OK) {
+		DHD_ERROR(("%s, read txglom param =%d\n", __FUNCTION__, glom));
+	}
 #endif /* CUSTOMER_HW4 && USE_WFA_CERT_CONF */
 	if (glom != DEFAULT_GLOM_VALUE) {
 		DHD_INFO(("%s set glom=0x%X\n", __FUNCTION__, glom));
@@ -6266,7 +6270,9 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 #endif /* USE_WL_TXBF */
 #ifdef USE_WL_FRAMEBURST
 #if defined(CUSTOMER_HW4) && defined(USE_WFA_CERT_CONF)
-	frameburst = sec_get_param(dhd, SET_PARAM_FRAMEBURST);
+	 if (sec_get_param_wfa_cert(dhd, SET_PARAM_FRAMEBURST, &frameburst) == BCME_OK) {
+		DHD_ERROR(("%s, read frameburst param=%d\n", __FUNCTION__, frameburst));
+	 }
 #ifdef DISABLE_FRAMEBURST_VSDB
 	g_frameburst = frameburst;
 #endif /* DISABLE_FRAMEBURST_VSDB */
@@ -6688,6 +6694,15 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 		FALSE) {
 		wlfc_enable = FALSE;
 	}
+
+#if defined(PROP_TXSTATUS)
+#if defined(CUSTOMER_HW4) && defined(USE_WFA_CERT_CONF)
+	if (sec_get_param_wfa_cert(dhd, SET_PARAM_PROPTX, &proptx) == BCME_OK) {
+		DHD_ERROR(("%s , read proptx param=%d\n", __FUNCTION__, proptx));
+		wlfc_enable = proptx;
+	}
+#endif /* CUSTOMER_HW4 && USE_WFA_CERT_CONF && PROP_TXSTATUS */
+#endif /* PROP_TXSTATUS */
 
 #ifndef DISABLE_11N
 	bcm_mkiovar("ampdu_hostreorder", (char *)&hostreorder, 4, iovbuf, sizeof(iovbuf));

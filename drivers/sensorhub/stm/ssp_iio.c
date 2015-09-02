@@ -144,7 +144,8 @@ void report_sensordata(struct ssp_data *data, int sensor,
 
 	/* wake-up sensor */
 	if (sensor == PROXIMITY_SENSOR ||
-		sensor == SIG_MOTION_SENSOR) {
+		sensor == SIG_MOTION_SENSOR ||
+		sensor == TILT_DETECTOR) {
 		wake_lock_timeout(&data->ssp_wake_lock, 3 * HZ);
 	}
 }

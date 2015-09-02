@@ -174,6 +174,13 @@ ifeq ($(CONFIG_WL_NAN),y)
 DHDCFLAGS += -DWL_NAN
 endif
 
+# FCC power limit control on ch12/13.
+DHDCFLAGS += -DFCC_PWR_LIMIT_2G
+# US/988 country code with higher power on UNII-1 5G band
+DHDCFLAGS += -DDHD_SUPPORT_FCC_US_988
+
+# WFA Certification feature
+DHDCFLAGS += -DUSE_WFA_CERT_CONF
 
 ##############################
 # Android Platform Definition
@@ -185,7 +192,7 @@ endif
 # Definitions are filtered by Kernel version
 DHDCFLAGS += -DWL_ENABLE_P2P_IF
 DHDCFLAGS += -DWL_SUPPORT_BACKPORTED_KPATCHES
-# Default definitions for KitKat THIS_STRING_WILL_BE_REPLACED_WITH_ANDROID_DEFINITION Lollipop
+# Default definitions for KitKat, Lollipop
 DHDCFLAGS += -DWL_CFG80211_STA_EVENT
 DHDCFLAGS += -DWL_IFACE_COMB_NUM_CHANNELS
 # To support p2p private command on kernel 3.8 or above
@@ -204,6 +211,15 @@ DHDCFLAGS += -DWL_VENDOR_EXT_SUPPORT
 
 # Extra file list for Lollipop
 DHD_ANDROID_OFILES := wl_cfgvendor.o dhd_rtt.o
+
+# GN4 platform still disabled Lollipop features
+ifeq ($(filter y,$(CONFIG_MACH_UNIVERSAL5433) $(CONFIG_ARCH_APQ8084)),y)
+DHD_ANDROID_OFILES :=$(filter-out wl_cfgvendor.o dhd_rtt.o,$(DHD_ANDROID_OFILES))
+DHDCFLAGS :=$(filter-out -DLINKSTAT_SUPPORT,$(DHDCFLAGS))
+DHDCFLAGS :=$(filter-out -DGSCAN_SUPPORT,$(DHDCFLAGS))
+DHDCFLAGS :=$(filter-out -DRTT_SUPPORT,$(DHDCFLAGS))
+DHDCFLAGS :=$(filter-out -DWL_VENDOR_EXT_SUPPORT,$(DHDCFLAGS))
+endif
 
 
 
@@ -261,9 +277,13 @@ ifeq ($(BUS_IFACE_PCIE),y)
   DHDCFLAGS += -DDHDTCPACK_SUPPRESS
 endif
 
+# Disabled DHDTCPACK_SUPPRESS for T Project / Enabled for Zero Project
+ifeq ($(filter y,$(CONFIG_MACH_UNIVERSAL5433) $(CONFIG_ARCH_APQ8084)),y)
+  DHDCFLAGS :=$(filter-out -DDHDTCPACK_SUPPRESS,$(DHDCFLAGS))
+endif
+
 ifeq ($(CONFIG_ARCH_MSM),y)
   DHDCFLAGS += -DSET_RPS_CPUS
-  DHDCFLAGS := $(filter-out -DDHDTCPACK_SUPPRESS,$(DHDCFLAGS))
 endif
 
 ifeq ($(CONFIG_MACH_UNIVERSAL7420),y)

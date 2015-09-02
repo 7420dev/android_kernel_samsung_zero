@@ -808,6 +808,28 @@ static ssize_t set_temp_humi_delay(struct device *dev,
 	return size;
 }
 
+static ssize_t show_tilt_delay(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	struct ssp_data *data  = dev_get_drvdata(dev);
+
+	return sprintf(buf, "%lld\n",
+		data->adDelayBuf[TILT_DETECTOR]);
+}
+
+static ssize_t set_tilt_delay(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
+{
+	int64_t dNewDelay;
+	struct ssp_data *data  = dev_get_drvdata(dev);
+
+	if (kstrtoll(buf, 10, &dNewDelay) < 0)
+		return -1;
+
+	change_sensor_delay(data, TILT_DETECTOR, dNewDelay);
+	return size;
+}
+
 ssize_t ssp_sensorhub_voicel_pcmdump_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -923,6 +945,8 @@ static DEVICE_ATTR(ssp_flush, S_IWUSR | S_IWGRP,
 	NULL, set_flush);
 static DEVICE_ATTR(shake_cam, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_shake_cam, set_shake_cam);
+static DEVICE_ATTR(tilt_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
+	show_tilt_delay, set_tilt_delay);
 static struct device_attribute dev_attr_gesture_poll_delay
 	= __ATTR(poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_gesture_delay, set_gesture_delay);
@@ -975,6 +999,7 @@ static struct device_attribute *mcu_attrs[] = {
 	&dev_attr_game_rot_poll_delay,
 	&dev_attr_step_det_poll_delay,
 	&dev_attr_pressure_poll_delay,
+	&dev_attr_tilt_poll_delay,
 	&dev_attr_ssp_flush,
 	&dev_attr_shake_cam,
 	&dev_attr_int_gyro_enable,

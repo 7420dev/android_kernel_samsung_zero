@@ -134,6 +134,7 @@ struct vfsspi_device_data {
 	size_t stream_buffer_size;
 	unsigned int drdy_pin;
 	unsigned int sleep_pin;
+	struct task_struct *t;
 	int user_pid;
 	int signal_id;
 	unsigned int current_spi_speed;
@@ -143,7 +144,9 @@ struct vfsspi_device_data {
 	spinlock_t irq_lock;
 	unsigned short drdy_irq_flag;
 	unsigned int ldocontrol;
+#ifndef ENABLE_SENSORS_FPRINT_SECURE
 	unsigned int ocp_en;
+#endif
 	unsigned int ldo_pin; /* Ldo 3.3V GPIO pin number */
 	unsigned int ldo_pin2; /* Ldo 1.8V GPIO pin number */
 #ifdef ENABLE_VENDOR_CHECK
@@ -190,33 +193,19 @@ extern void fingerprint_unregister(struct device *dev,
 
 static int vfsspi_send_drdy_signal(struct vfsspi_device_data *vfsspi_device)
 {
-	struct task_struct *t;
 	int ret = 0;
 
 	pr_debug("%s\n", __func__);
 
-	if (vfsspi_device->user_pid != 0) {
-		rcu_read_lock();
-		/* find the task_struct associated with userpid */
-		pr_debug("%s Searching task with PID=%08x\n",
-			__func__, vfsspi_device->user_pid);
-		t = pid_task(find_pid_ns(vfsspi_device->user_pid, &init_pid_ns),
-			     PIDTYPE_PID);
-		if (t == NULL) {
-			pr_debug("%s No such pid\n", __func__);
-			rcu_read_unlock();
-			return -ENODEV;
-		}
-		rcu_read_unlock();
+	if (vfsspi_device->t) {
 		/* notify DRDY signal to user process */
 		ret = send_sig_info(vfsspi_device->signal_id,
-				    (struct siginfo *)1, t);
+				    (struct siginfo *)1, vfsspi_device->t);
 		if (ret < 0)
 			pr_err("%s Error sending signal\n", __func__);
 
-	} else {
-		pr_err("%s pid not received yet\n", __func__);
-	}
+	} else
+		pr_err("%s task_struct is not received yet\n", __func__);
 
 	return ret;
 }
@@ -631,6 +620,18 @@ static int vfsspi_register_drdy_signal(struct vfsspi_device_data *vfsspi_device,
 	} else {
 		vfsspi_device->user_pid = usr_signal.user_pid;
 		vfsspi_device->signal_id = usr_signal.signal_id;
+		rcu_read_lock();
+		/* find the task_struct associated with userpid */
+		vfsspi_device->t = pid_task(find_pid_ns(vfsspi_device->user_pid, &init_pid_ns),
+			     PIDTYPE_PID);
+		if (vfsspi_device->t == NULL) {
+			pr_debug("%s No such pid\n", __func__);
+			rcu_read_unlock();
+			return -ENODEV;
+		}
+		rcu_read_unlock();
+		pr_info("%s Searching task with PID=%08x, t = %p\n",
+			__func__, vfsspi_device->user_pid, vfsspi_device->t);
 	}
 	return 0;
 }
@@ -739,11 +740,9 @@ void vfsspi_regulator_onoff(struct vfsspi_device_data *vfsspi_device,
 			if (onoff) {
 #ifdef ENABLE_SENSORS_FPRINT_SECURE
 				/* ocp_en on example*/
-				if (vfsspi_device->ocp_en) {
-					ret = exynos_smc(MC_FC_FP_BTP_OCP_HIGH, 0, 0, 0);
-					pr_info("%s: ocp on, smc ret = %d\n", __func__, ret);
-					usleep_range(2950, 3000);
-				}
+				ret = exynos_smc(MC_FC_FP_BTP_OCP_HIGH, 0, 0, 0);
+				pr_info("%s: ocp on, smc ret = %d\n", __func__, ret);
+				usleep_range(2950, 3000);
 #else
 				if (vfsspi_device->ocp_en) {
 					gpio_set_value(vfsspi_device->ocp_en, 1);
@@ -762,10 +761,8 @@ void vfsspi_regulator_onoff(struct vfsspi_device_data *vfsspi_device,
 
 #ifdef ENABLE_SENSORS_FPRINT_SECURE
 				/* ocp_en off example*/
-				if (vfsspi_device->ocp_en) {
-					ret = exynos_smc(MC_FC_FP_BTP_OCP_LOW, 0, 0, 0);
-					pr_info("%s: ocp off, smc ret = %d\n", __func__, ret);
-				}
+				ret = exynos_smc(MC_FC_FP_BTP_OCP_LOW, 0, 0, 0);
+				pr_info("%s: ocp off, smc ret = %d\n", __func__, ret);
 #else
 				if (vfsspi_device->ocp_en)
 					gpio_set_value(vfsspi_device->ocp_en, 0);
@@ -1059,12 +1056,7 @@ static int vfsspi_platformInit(struct vfsspi_device_data *vfsspi_device)
 	int status = 0;
 	pr_info("%s\n", __func__);
 
-#ifdef ENABLE_SENSORS_FPRINT_SECURE
-	if (vfsspi_device->ocp_en == 0) {
-		status = exynos_smc(MC_FC_FP_BTP_OCP_NONE, 0, 0, 0);
-		pr_info("%s: ocp_none, smc ret = %d\n", __func__, status);
-	}
-#else
+#ifndef ENABLE_SENSORS_FPRINT_SECURE
 	if (vfsspi_device->ocp_en) {
 		status = gpio_request(vfsspi_device->ocp_en, "vfsspi_ocp_en");
 		if (status < 0) {
@@ -1159,8 +1151,7 @@ vfsspi_platformInit_ldo2_failed:
 	gpio_free(vfsspi_device->ldo_pin);
 vfsspi_platformInit_ldo_failed:
 #ifndef ENABLE_SENSORS_FPRINT_SECURE
-	if (vfsspi_device->ocp_en)
-		gpio_free(vfsspi_device->ocp_en);
+	gpio_free(vfsspi_device->ocp_en);
 vfsspi_platformInit_ocpen_failed:
 #endif
 	pr_info("%s : platformInit failed!\n", __func__);
@@ -1221,7 +1212,7 @@ static int vfsspi_parse_dt(struct device *dev,
 		pr_info("%s: drdyPin=%d\n",
 			__func__, data->drdy_pin);
 	}
-
+#ifndef ENABLE_SENSORS_FPRINT_SECURE
 	if (!of_find_property(np, "vfsspi-ocpen", NULL)) {
 		pr_err("%s: not set ocp_en in dts\n", __func__);
 	} else {
@@ -1233,7 +1224,7 @@ static int vfsspi_parse_dt(struct device *dev,
 	}
 	pr_info("%s: ocp_en=%d\n",
 				__func__, data->ocp_en);
-
+#endif
 	gpio = of_get_named_gpio(np, "vfsspi-ldoPin", 0);
 	if (gpio < 0) {
 		data->ldo_pin = 0;
@@ -1785,8 +1776,8 @@ static int vfsspi_pm_suspend(struct device *dev)
 
 	if (g_data != NULL) {
 		vfsspi_disable_debug_timer();
-		vfsspi_ioctl_power_off(g_data);
 #ifdef ENABLE_SENSORS_FPRINT_SECURE
+		vfsspi_ioctl_power_off(g_data);
 		ret = exynos_smc(MC_FC_FP_PM_SUSPEND, 0, 0, 0);
 		pr_info("%s: suspend smc ret = %d\n", __func__, ret);
 #endif
@@ -1805,8 +1796,8 @@ static int vfsspi_pm_resume(struct device *dev)
 #ifdef ENABLE_SENSORS_FPRINT_SECURE
 		ret = exynos_smc(MC_FC_FP_PM_RESUME, 0, 0, 0);
 		pr_info("%s: resume smc ret = %d\n", __func__, ret);
-#endif
 		vfsspi_ioctl_power_on(g_data);
+#endif
 		vfsspi_enable_debug_timer();
 	}
 	pr_info("%s\n", __func__);

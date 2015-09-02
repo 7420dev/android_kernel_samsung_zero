@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_pcie.c 553525 2015-04-30 03:25:33Z $
+ * $Id: dhd_pcie.c 560455 2015-06-01 06:59:38Z $
  */
 
 

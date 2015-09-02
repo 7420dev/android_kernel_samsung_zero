@@ -630,6 +630,16 @@ void report_bulk_comp_data(struct ssp_data *data)
 }
 #endif
 
+void report_tilt_data(struct ssp_data *data,
+		struct sensor_value *tilt_data)
+{
+	data->buf[TILT_DETECTOR].tilt_detector = tilt_data->tilt_detector;
+	ssp_push_1bytes_buffer(data->tilt_indio_dev, tilt_data->timestamp,
+			&tilt_data->tilt_detector);
+	wake_lock_timeout(&data->ssp_wake_lock, 3 * HZ);
+	pr_err("[SSP]: %s: %d", __func__,  tilt_data->tilt_detector);
+}
+
 int initialize_event_symlink(struct ssp_data *data)
 {
 	int iRet = 0;
@@ -853,6 +863,20 @@ static const struct iio_chan_spec pressure_channels[] = {
 		.scan_index = 3,
 		.scan_type = IIO_ST('s', IIO_BUFFER_12_BYTES * 8,
 			IIO_BUFFER_12_BYTES * 8, 0)
+	}
+};
+
+static const struct iio_info tilt_info = {
+	.driver_module = THIS_MODULE,
+};
+
+static const struct iio_chan_spec tilt_channels[] = {
+	{
+		.type = IIO_TIMESTAMP,
+		.channel = -1,
+		.scan_index = 3,
+		.scan_type = IIO_ST('s', IIO_BUFFER_1_BYTES*8,
+			IIO_BUFFER_1_BYTES*8, 0)
 	}
 };
 
@@ -1284,8 +1308,45 @@ int initialize_input_dev(struct ssp_data *data)
 	}
 	input_set_drvdata(data->meta_input_dev, data);
 
+	data->tilt_indio_dev = iio_device_alloc(0);
+	if (!data->tilt_indio_dev)
+		goto err_alloc_tilt;
+
+	data->tilt_indio_dev->name = "tilt_detector";
+	data->tilt_indio_dev->dev.parent = &data->spi->dev;
+	data->tilt_indio_dev->info = &tilt_info;
+	data->tilt_indio_dev->channels = tilt_channels;
+	data->tilt_indio_dev->num_channels = ARRAY_SIZE(tilt_channels);
+	data->tilt_indio_dev->modes = INDIO_DIRECT_MODE;
+	data->tilt_indio_dev->currentmode = INDIO_DIRECT_MODE;
+
+	iRet = ssp_iio_configure_ring(data->tilt_indio_dev);
+	if (iRet)
+		goto err_config_ring_tilt;
+
+	iRet = iio_buffer_register(data->tilt_indio_dev, data->tilt_indio_dev->channels,
+					data->tilt_indio_dev->num_channels);
+	if (iRet)
+		goto err_register_buffer_tilt;
+
+	iRet = iio_device_register(data->tilt_indio_dev);
+	if (iRet)
+		goto err_register_device_tilt;
+
 	return SUCCESS;
 
+err_register_device_tilt:
+	pr_err("[SSP]: failed to register tilt device\n");
+	iio_buffer_unregister(data->tilt_indio_dev);
+err_register_buffer_tilt:
+	pr_err("[SSP]: failed to register tilt buffer\n");
+	ssp_iio_unconfigure_ring(data->tilt_indio_dev);
+err_config_ring_tilt:
+	pr_err("[SSP]: failed to configure tilt ring buffer\n");
+	iio_device_free(data->tilt_indio_dev);
+err_alloc_tilt:
+	pr_err("[SSP]: failed to allocate memory for iio tilt device\n");
+	input_unregister_device(data->meta_input_dev);
 err_initialize_meta_input_dev:
 	pr_err("[SSP]: %s - could not allocate meta event input device\n", __func__);
 #ifdef CONFIG_SENSORS_SSP_INTERRUPT_GYRO_SENSOR

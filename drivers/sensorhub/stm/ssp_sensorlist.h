@@ -44,6 +44,7 @@
 	"",				\
 	"light_ir_sensor",		\
 	"interrupt_gyro_sensor",	\
+	"tilt_detector",		\
 	"meta_event", }
 
 /* 0: disable sensor, 1: enable as iio device */
@@ -74,6 +75,7 @@
 	0, /* ? */		\
 	1, /* light ir */	\
 	1, /* interrupt gyro */	\
+	1, /* tilt detector */	\
 	1, /* meta sensor */ }
 
 #if defined(CONFIG_SENSORS_SSP_TMG399X)
@@ -81,25 +83,25 @@
 #define SENSOR_DATA_LEN	{ \
 	6, 6, 12, 6, 7, 6, 20, 2, 5, 10, \
 	1, 0, 1, 1, 12, 17, 17, 4, 0, 0, \
-	0, 0, 1, 0, 12, 6, 8, }
+	0, 0, 1, 0, 12, 6, 1, 8, }
 
 /* byte unit - not including timestamp */
 #define SENSOR_REPORT_LEN { \
 	6, 10, 12, 6, 7, 14, 20, 2, 5, 10, \
 	0, 0, 1, 1, 12, 17, 17, 12, 0, 0, \
-	0, 0, 1, 0, 12, 10, 8, }
+	0, 0, 1, 0, 12, 10, 1, 8, }
 #else
 /* byte unit - not including timestamp */
 #define SENSOR_DATA_LEN	{ \
 	6, 6, 12, 6, 7, 6, 20, 3, 5, 10, \
 	2, 0, 1, 1, 12, 17, 17, 4, 0, 0, \
-	0, 0, 1, 0, 12, 6, 8, }
+	0, 0, 1, 0, 12, 6, 1, 8, }
 
 /* byte unit - not including timestamp */
 #define SENSOR_REPORT_LEN { \
 	6, 10, 12, 6, 7, 14, 20, 3, 5, 10, \
 	0, 0, 1, 1, 12, 17, 17, 12, 0, 0, \
-	0, 0, 1, 0, 12, 10, 8, }
+	0, 0, 1, 0, 12, 10, 1, 8, }
 #endif
 
 #endif

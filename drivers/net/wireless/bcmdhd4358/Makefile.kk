@@ -174,6 +174,13 @@ ifeq ($(CONFIG_WL_NAN),y)
 DHDCFLAGS += -DWL_NAN
 endif
 
+# FCC power limit control on ch12/13.
+DHDCFLAGS += -DFCC_PWR_LIMIT_2G
+# US/988 country code with higher power on UNII-1 5G band
+#DHDCFLAGS += -DDHD_SUPPORT_FCC_US_988
+
+# WFA Certification feature
+DHDCFLAGS += -DUSE_WFA_CERT_CONF
 
 ##############################
 # Android Platform Definition
@@ -246,9 +253,13 @@ ifeq ($(BUS_IFACE_PCIE),y)
   DHDCFLAGS += -DDHDTCPACK_SUPPRESS
 endif
 
+# Disabled DHDTCPACK_SUPPRESS for T Project / Enabled for Zero Project
+ifeq ($(filter y,$(CONFIG_MACH_UNIVERSAL5433) $(CONFIG_ARCH_APQ8084)),y)
+  DHDCFLAGS :=$(filter-out -DDHDTCPACK_SUPPRESS,$(DHDCFLAGS))
+endif
+
 ifeq ($(CONFIG_ARCH_MSM),y)
   DHDCFLAGS += -DSET_RPS_CPUS
-  DHDCFLAGS := $(filter-out -DDHDTCPACK_SUPPRESS,$(DHDCFLAGS))
 endif
 
 # New Features

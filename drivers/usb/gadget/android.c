@@ -114,12 +114,16 @@ struct android_dev {
 	int usb_lock;
 #endif
 	char ffs_aliases[256];
+	bool hotplug;
+	bool is_accessary;
 };
 
 static struct class *android_class;
 static struct android_dev *_android_dev;
 static int android_bind_config(struct usb_configuration *c);
 static void android_unbind_config(struct usb_configuration *c);
+extern void exynos_dm_hotplug_enable(void);
+extern void exynos_dm_hotplug_disable(void);
 
 /* string IDs are assigned dynamically */
 #define STRING_MANUFACTURER_IDX		0
@@ -215,7 +219,27 @@ static void android_work(struct work_struct *data)
 		kobject_uevent_env(&dev->dev->kobj, KOBJ_CHANGE, uevent_envp);
 		printk(KERN_DEBUG "usb: %s sent uevent %s\n",
 			 __func__, uevent_envp[0]);
-	} else {
+
+		if ( dev->is_accessary && !dev->hotplug)
+		{		
+			if(cdev->config && (dev->connected == dev->sw_connected))
+			{
+				dev->hotplug = true;	
+				printk(KERN_DEBUG "usb: %s exynos_dm_hotplug_disable\n", __func__);
+				exynos_dm_hotplug_disable();
+			}
+		}
+
+		if (dev->hotplug)
+		{
+			if(!dev->connected)
+			{
+				dev->hotplug = false;	
+				printk(KERN_DEBUG "usb: %s exynos_dm_hotplug_enable\n", __func__);
+				exynos_dm_hotplug_enable();
+			}
+		}
+		} else {
 		printk(KERN_DEBUG "usb: %s did not send uevent (%d %d %p)\n",
 		 __func__, dev->connected, dev->sw_connected, cdev->config);
 	}
@@ -1698,6 +1722,7 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 
 #ifdef CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE
 	g_rndis = 0;
+	dev->is_accessary = false;
 #endif
 
 	mutex_lock(&dev->mutex);
@@ -1765,6 +1790,10 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 
 			if (!strcmp(name,"rndis")) {
 				g_rndis = 1;
+			}
+			
+			if (!strcmp(name,"accessory")) {
+				dev->is_accessary = true;
 			}
 
 #endif
@@ -2277,6 +2306,7 @@ static int __init init(void)
 	}
 
 	dev->disable_depth = 1;
+	dev->hotplug = false;
 	dev->functions = supported_functions;
 	INIT_LIST_HEAD(&dev->enabled_functions);
 	INIT_WORK(&dev->work, android_work);

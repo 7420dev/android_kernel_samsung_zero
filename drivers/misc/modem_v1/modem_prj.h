@@ -591,6 +591,7 @@ struct modemctl_ops {
 	int (*modem_force_crash_exit)(struct modem_ctl *);
 	int (*modem_dump_reset)(struct modem_ctl *);
 	int (*modem_dump_start)(struct modem_ctl *);
+	int (*modem_cp_upload)(struct modem_ctl *, char *);
 };
 
 /* for IPC Logger */

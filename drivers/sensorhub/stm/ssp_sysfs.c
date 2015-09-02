@@ -666,6 +666,24 @@ static ssize_t set_interrupt_gyro_poll_delay(struct device *dev,
 	return size;
 }
 
+static ssize_t show_tilt_delay(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	return show_sensor_delay(dev, buf, TILT_DETECTOR);
+}
+
+static ssize_t set_tilt_delay(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t size)
+{
+	int64_t delay;
+	struct ssp_data *data  = dev_get_drvdata(dev);
+
+	if (kstrtoll(buf, 10, &delay) < 0)
+		return -EINVAL;
+
+	change_sensor_delay(data, TILT_DETECTOR, delay);
+	return size;
+}
 
 static ssize_t show_int_gyro_enable(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -764,6 +782,8 @@ static DEVICE_ATTR(step_cnt_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_step_cnt_delay, set_step_cnt_delay);
 static DEVICE_ATTR(interrupt_gyro_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
 	show_interrupt_gyro_poll_delay, set_interrupt_gyro_poll_delay);
+static DEVICE_ATTR(tilt_poll_delay, S_IRUGO | S_IWUSR | S_IWGRP,
+	show_tilt_delay, set_tilt_delay);
 static DEVICE_ATTR(ssp_flush, S_IWUSR | S_IWGRP,
 	NULL, set_flush);
 static DEVICE_ATTR(int_gyro_enable, S_IRUGO | S_IWUSR | S_IWGRP,
@@ -798,6 +818,7 @@ static struct device_attribute *mcu_attrs[] = {
 	&dev_attr_rot_poll_delay,
 	&dev_attr_step_cnt_poll_delay,
 	&dev_attr_interrupt_gyro_poll_delay,
+	&dev_attr_tilt_poll_delay,
 	&dev_attr_ssp_flush,
 	&dev_attr_int_gyro_enable,
 	NULL,

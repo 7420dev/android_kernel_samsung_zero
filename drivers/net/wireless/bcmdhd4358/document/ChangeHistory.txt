@@ -1,7 +1,31 @@
-BCM4358 DHD 1.47.30 for Android Lollipop Zero Project
+BCM4358 DHD 1.47.32.1 for Android Lollipop T/Zero Project
 Notes: 
 - Must sync up DHD and FW for additional message to eliminate spurious D0 interrupt.
 . additional message to eliminate spurious D0 interrupt is enabled from DHD 1.47.20 and FW 7.112.20.5/7.112.20.2(IBSS) 
+
+2015.7.16 - DHD 1.47.32.1
+Others
+   - Added Q2/993 country code (This patch should be sync up with same FW patch)
+   - Disabled DHDTCPACK_SUPPRESS for T Project, Enabled for Zero Project
+
+2015.6.11 - DHD 1.47.32
+Kernel Panic
+   - CSP:903158 Enabled dhd pcie oob interrupt after dhdpcie_suspend_dev() function
+   - CSP:922136 Removed del_timer from timer callback - Lossless Roaming feature
+
+Others
+   - CSP:886934 Enabled parameter setup from file for WIFI certification 
+   - CSP:921134 FCC power limit control on ch12/13
+      (This patch should be sync up with FW 7.112.27/7.112.18.8(IBSS) or higher version)
+   - CSP:921590 Added condition to clear RPS_CPUs for Zero project
+   - CSP:930546 Added US/988 country code / But disabled in Makefile : DHD_SUPPORT_FCC_US_988
+      (This patch should be sync up with FW 7.112.27/7.112.18.8(IBSS) or higher version)
+   - Change default BCN_LI_DTIM value from 0 to 3 in suspend mode
+   - Disabled DHDTCPACK_SUPPRESS feature
+   - Disabled Lollipop features for GN4 platform
+   - Fixed Coverity defects
+   - Remove unnecessary thread code
+
 
 2015.5.13 - DHD 1.47.30
 Others
