@@ -1,10 +1,14 @@
 #!/res/busybox sh
 
+export PATH=/res/asset:$PATH
+
 CONFIG_JSON=/res/synapse/config.json
 ACTION_SCRIPTS=/res/synapse/actions/
 
 if [ ! -f $CONFIG_JSON ]; then
+	mount -o rw,remount rootfs
 	source /res/synapse/json.generate > $CONFIG_JSON
+	mount -o ro,remount rootfs
 fi
 
 case "${1}" in

@@ -1,5 +1,7 @@
 #!/res/busybox sh
 
+export PATH=/res/asset:$PATH
+
 readColour() {
 	P=/sys/class/mdnie/mdnie/controls/
 	echo $(printf "#%02X%02X%02X\n" $(cat $P/$1_red) $(cat $P/$1_green) $(cat $P/$1_blue))

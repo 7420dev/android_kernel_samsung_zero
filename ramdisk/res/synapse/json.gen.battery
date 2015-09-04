@@ -1,5 +1,7 @@
 #!/res/busybox sh
 
+export PATH=/res/asset:$PATH
+
 cat << CTAG
 {
     name:Battery,
