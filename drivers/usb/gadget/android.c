@@ -122,8 +122,10 @@ static struct class *android_class;
 static struct android_dev *_android_dev;
 static int android_bind_config(struct usb_configuration *c);
 static void android_unbind_config(struct usb_configuration *c);
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 extern void exynos_dm_hotplug_enable(void);
 extern void exynos_dm_hotplug_disable(void);
+#endif
 
 /* string IDs are assigned dynamically */
 #define STRING_MANUFACTURER_IDX		0
@@ -220,6 +222,7 @@ static void android_work(struct work_struct *data)
 		printk(KERN_DEBUG "usb: %s sent uevent %s\n",
 			 __func__, uevent_envp[0]);
 
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 		if ( dev->is_accessary && !dev->hotplug)
 		{		
 			if(cdev->config && (dev->connected == dev->sw_connected))
@@ -239,6 +242,7 @@ static void android_work(struct work_struct *data)
 				exynos_dm_hotplug_enable();
 			}
 		}
+#endif
 		} else {
 		printk(KERN_DEBUG "usb: %s did not send uevent (%d %d %p)\n",
 		 __func__, dev->connected, dev->sw_connected, cdev->config);
