@@ -423,13 +423,37 @@ static void thread_manage_work(struct work_struct *work)
 static DECLARE_WORK(manage_work, thread_manage_work);
 #endif
 
-static int __ref fb_state_change(struct notifier_block *nb,
+static void cpu_all_ctrl(struct work_struct *work);
+static DECLARE_WORK(cpu_all_ctrl_work, cpu_all_ctrl);
+static bool cac_bool;
+
+static void __ref cpu_all_ctrl(struct work_struct *work)
+{
+	unsigned int i;
+
+	if (cac_bool) {
+		for (i = 1; i < setup_max_cpus; i++) {
+			if (!cpu_online(i)) {
+				pr_info("Turning on core %d\n", i);
+				cpu_up(i);
+			}
+		}
+	} else {
+		for (i = 1; i < setup_max_cpus; i++) {
+			if (cpu_online(i)) {
+				pr_info("Turning off core %d\n", i);
+				cpu_down(i);
+			}
+		}
+	}
+}
+
+static int fb_state_change(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
 	struct fb_event *evdata = data;
 	struct fb_info *info = evdata->info;
 	unsigned int blank;
-	unsigned int i;
 
 	if (val != FB_EVENT_BLANK &&
 		val != FB_R_EARLY_EVENT_BLANK)
@@ -455,12 +479,8 @@ static int __ref fb_state_change(struct notifier_block *nb,
 			kthread_stop(dm_hotplug_task);
 			dm_hotplug_task = NULL;
 		}
-		for (i = 1; i < setup_max_cpus; i++) {
-			if (cpu_online(i)) {
-				pr_info("Turning off core %d\n", i);
-				cpu_down(i);
-			}
-		}
+		cac_bool = false;
+		schedule_work_on(0, &cpu_all_ctrl_work);
 		mutex_unlock(&thread_lock);
 		break;
 
@@ -483,12 +503,8 @@ static int __ref fb_state_change(struct notifier_block *nb,
 		pr_info("LCD is on\n");
 
 		mutex_lock(&thread_lock);
-		for (i = 1; i < setup_max_cpus; i++) {
-			if (!cpu_online(i)) {
-				pr_info("Turning on core %d\n", i);
-				cpu_up(i);
-			}
-		}
+		cac_bool = true;
+		schedule_work_on(0, &cpu_all_ctrl_work);
 		exynos_dm_hotplug_enable();
 		dm_hotplug_task =
 			kthread_create(on_run, NULL, "thread_hotplug");
