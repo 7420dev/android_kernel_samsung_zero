@@ -10,7 +10,6 @@ cat << CTAG
 		`source /res/synapse/json.gen.little`,
 		`source /res/synapse/json.gen.gpu`,
 		`source /res/synapse/json.gen.bus`
-		`source /res/synapse/json.gen.audio`
     ]
 }
 CTAG
