@@ -439,7 +439,7 @@ static void __ref cpu_all_ctrl(struct work_struct *work)
 			}
 		}
 	} else {
-		for (i = 1; i < setup_max_cpus; i++) {
+		for (i = setup_max_cpus - 1; i >= 1; i--) {
 			if (cpu_online(i)) {
 				pr_info("Turning off core %d\n", i);
 				cpu_down(i);
