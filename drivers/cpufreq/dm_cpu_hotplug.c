@@ -423,13 +423,12 @@ static void thread_manage_work(struct work_struct *work)
 static DECLARE_WORK(manage_work, thread_manage_work);
 #endif
 
-static int __ref fb_state_change(struct notifier_block *nb,
+static int fb_state_change(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
 	struct fb_event *evdata = data;
 	struct fb_info *info = evdata->info;
 	unsigned int blank;
-	unsigned int i;
 
 	if (val != FB_EVENT_BLANK &&
 		val != FB_R_EARLY_EVENT_BLANK)
@@ -448,22 +447,6 @@ static int __ref fb_state_change(struct notifier_block *nb,
 		lcd_is_on = false;
 		pr_info("LCD is off\n");
 
-		mutex_lock(&thread_lock);
-		in_suspend_prepared = true;
-		exynos_dm_hotplug_disable();
-		if (dm_hotplug_task) {
-			kthread_stop(dm_hotplug_task);
-			dm_hotplug_task = NULL;
-		}
-		for (i = 1; i < setup_max_cpus; i++) {
-			if (cpu_online(i)) {
-				pr_info("Turning off core %d\n", i);
-				cpu_down(i);
-			}
-		}
-		mutex_unlock(&thread_lock);
-		break;
-
 #ifdef CONFIG_HOTPLUG_THREAD_STOP
 		if (thread_manage_wq) {
 			if (work_pending(&manage_work))
@@ -481,25 +464,6 @@ static int __ref fb_state_change(struct notifier_block *nb,
 		 */
 		lcd_is_on = true;
 		pr_info("LCD is on\n");
-
-		mutex_lock(&thread_lock);
-		for (i = 1; i < setup_max_cpus; i++) {
-			if (!cpu_online(i)) {
-				pr_info("Turning on core %d\n", i);
-				cpu_up(i);
-			}
-		}
-		exynos_dm_hotplug_enable();
-		dm_hotplug_task =
-			kthread_create(on_run, NULL, "thread_hotplug");
-		if (IS_ERR(dm_hotplug_task)) {
-			mutex_unlock(&thread_lock);
-			pr_err("Failed in creation of thread.\n");
-			return -EINVAL;
-		}
-		in_suspend_prepared = false;
-		wake_up_process(dm_hotplug_task);
-		mutex_unlock(&thread_lock);
 
 #ifdef CONFIG_HOTPLUG_THREAD_STOP
 		if (thread_manage_wq) {
@@ -636,6 +600,17 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 					}
 
 					for (i = 1; i < NR_CLUST0_CPUS; i++) {
+						if (!cpu_online(i)) {
+							ret = cpu_up(i);
+							if (ret)
+								goto blk_out;
+						}
+					}
+				} else {
+					for (i = 1; i < setup_max_cpus; i++) {
+						if (do_hotplug_out && i >= NR_CLUST0_CPUS)
+							goto blk_out;
+
 						if (!cpu_online(i)) {
 							ret = cpu_up(i);
 							if (ret)
