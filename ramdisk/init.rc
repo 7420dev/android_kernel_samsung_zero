@@ -954,6 +954,7 @@ on property:sys.sysctl.tcp_def_init_rwnd=*
 
 on property:init.svc.bootanim=stopped
     start uci
+    start lmktweak
     write /proc/sys/vm/compact_memory 1
 
 # Reload SE Android Policy for MDM
@@ -1037,6 +1038,11 @@ service lmkd /sbin/lmkd
     class core
     critical
     socket lmkd seqpacket 0660 system system
+
+service lmktweak /system/bin/lmktweak
+    user root
+    oneshot
+    disabled
 
 service scs /system/bin/scs
     class main
