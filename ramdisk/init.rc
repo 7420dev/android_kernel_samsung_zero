@@ -508,7 +508,6 @@ on boot
     # parameters to match how it is managing things.
     write /proc/sys/vm/overcommit_memory 1
     write /proc/sys/vm/min_free_order_shift 4
-    write /proc/sys/vm/vfs_cache_pressure 10000
     chown root system /sys/module/lowmemorykiller/parameters/adj
     chmod 0220 /sys/module/lowmemorykiller/parameters/adj
     chown root root /sys/module/lowmemorykiller/parameters/minfree
