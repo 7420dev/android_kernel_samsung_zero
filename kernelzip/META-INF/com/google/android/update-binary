@@ -75,21 +75,6 @@ rm /system/lib*/omx/libOMX.Exynos.AAC.Decoder.so 2>/dev/null
 rm /system/lib*/omx/libOMX.Exynos.FLAC.Decoder.so 2>/dev/null
 rm /system/lib*/omx/libOMX.Exynos.MP3.Decoder.so 2>/dev/null
 
-if [ ! -e /system/swapfile ]; then
-	ui_print " - creating /system/swapfile"
-	FREE=$(df -k /system | grep "/system" | awk '{print $3}')
-	SWAPSIZE=$((($FREE - 102400) / 131072 * 128))
-	if [ "$SWAPSIZE" -gt "512" ]; then
-		SWAPSIZE=512
-	fi
-	if [ "$SWAPSIZE" -ge "1" ]; then
-        	ui_print "   creating $SWAPSIZE MB swap"
-	        dd if=/dev/zero of=/system/swapfile bs=1048576 count=$SWAPSIZE > /dev/null 2>&1
-	else
-        	ui_print "   insufficient /system available space!"
-	fi
-fi
-
 ui_print " - tuning file systems"
 fstrim -v /system > /dev/null 2>&1
 fstrim -v /data   > /dev/null 2>&1
