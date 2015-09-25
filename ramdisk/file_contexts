@@ -608,6 +608,11 @@
 /sys/class/power_supply/battery/camera                    u:object_r:sysfs_app_writable:s0
 
 #line 1 "vendor/samsung/common/sepolicy/vmware/file_contexts"
+############################# 
+# Device node of qcomm
+#
+/dev/snd/pcmC[0-9]*D[0-9]*c u:object_r:audio_capture_device:s0
+#line 1 "vendor/samsung/common/sepolicy/vmware/file_contexts"
 # VMware daemon
 /system/bin/mvpd	u:object_r:vmwared_exec:s0
 
@@ -688,6 +693,7 @@
 /dev/tuihw	u:object_r:tz_device:s0
 /dev/tzdev	u:object_r:tz_device:s0
 /dev/tzic	u:object_r:tz_device:s0
+/dev/tzirs	u:object_r:tz_device:s0
 /dev/url	u:object_r:url_device:s0
 /dev/usb(/.*)?	u:object_r:usb_device:s0
 /dev/usb.*	u:object_r:usb_device:s0
