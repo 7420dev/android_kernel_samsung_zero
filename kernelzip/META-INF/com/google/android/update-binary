@@ -13,9 +13,6 @@ rm -rf arter97
 mkdir arter97
 cd arter97
 unzip -o "$ZIP"
-chmod 755 busybox
-cat busybox.list | while read file; do ln -s busybox $file; done
-export PATH=/tmp/arter97:$PATH
 
 ui_print " ";
 ui_print " - mounting system partition"
