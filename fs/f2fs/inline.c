@@ -286,8 +286,7 @@ process_inline:
 }
 
 struct f2fs_dir_entry *find_in_inline_dir(struct inode *dir,
-			struct f2fs_filename *fname, struct page **res_page,
-			unsigned int flags)
+			struct f2fs_filename *fname, struct page **res_page)
 {
 	struct f2fs_sb_info *sbi = F2FS_SB(dir->i_sb);
 	struct f2fs_inline_dentry *inline_dentry;
@@ -306,7 +305,7 @@ struct f2fs_dir_entry *find_in_inline_dir(struct inode *dir,
 	inline_dentry = inline_data_addr(ipage);
 
 	make_dentry_ptr(NULL, &d, (void *)inline_dentry, 2);
-	de = find_target_dentry(fname, namehash, NULL, &d, flags);
+	de = find_target_dentry(fname, namehash, NULL, &d);
 	unlock_page(ipage);
 	if (de)
 		*res_page = ipage;
@@ -361,6 +360,10 @@ int make_empty_inline_dir(struct inode *inode, struct inode *parent,
 	return 0;
 }
 
+/*
+ * NOTE: ipage is grabbed by caller, but if any error occurs, we should
+ * release ipage in this function.
+ */
 static int f2fs_convert_inline_dir(struct inode *dir, struct page *ipage,
 				struct f2fs_inline_dentry *inline_dentry)
 {
@@ -370,8 +373,10 @@ static int f2fs_convert_inline_dir(struct inode *dir, struct page *ipage,
 	int err;
 
 	page = grab_cache_page(dir->i_mapping, 0);
-	if (!page)
+	if (!page) {
+		f2fs_put_page(ipage, 1);
 		return -ENOMEM;
+	}
 
 	set_new_dnode(&dn, dir, ipage, NULL, 0);
 	err = f2fs_reserve_block(&dn, 0);
@@ -379,13 +384,21 @@ static int f2fs_convert_inline_dir(struct inode *dir, struct page *ipage,
 		goto out;
 
 	f2fs_wait_on_page_writeback(page, DATA);
-	zero_user_segment(page, 0, PAGE_CACHE_SIZE);
+	zero_user_segment(page, MAX_INLINE_DATA, PAGE_CACHE_SIZE);
 
 	dentry_blk = kmap_atomic(page);
 
 	/* copy data from inline dentry block to new dentry block */
 	memcpy(dentry_blk->dentry_bitmap, inline_dentry->dentry_bitmap,
 					INLINE_DENTRY_BITMAP_SIZE);
+	memset(dentry_blk->dentry_bitmap + INLINE_DENTRY_BITMAP_SIZE, 0,
+			SIZE_OF_DENTRY_BITMAP - INLINE_DENTRY_BITMAP_SIZE);
+	/*
+	 * we do not need to zero out remainder part of dentry and filename
+	 * field, since we have used bitmap for marking the usage status of
+	 * them, besides, we can also ignore copying/zeroing reserved space
+	 * of dentry block, because them haven't been used so far.
+	 */
 	memcpy(dentry_blk->dentry, inline_dentry->dentry,
 			sizeof(struct f2fs_dir_entry) * NR_INLINE_DENTRY);
 	memcpy(dentry_blk->filename, inline_dentry->filename,
@@ -435,8 +448,9 @@ int f2fs_add_inline_entry(struct inode *dir, const struct qstr *name,
 						slots, NR_INLINE_DENTRY);
 	if (bit_pos >= NR_INLINE_DENTRY) {
 		err = f2fs_convert_inline_dir(dir, ipage, dentry_blk);
-		if (!err)
-			err = -EAGAIN;
+		if (err)
+			return err;
+		err = -EAGAIN;
 		goto out;
 	}
 
@@ -529,20 +543,16 @@ bool f2fs_empty_inline_dir(struct inode *dir)
 	return true;
 }
 
-int f2fs_read_inline_dir(struct file *file, void *dirent, filldir_t filldir,
-						struct f2fs_str *fstr)
+int f2fs_read_inline_dir(struct file *file, struct dir_context *ctx,
+				struct f2fs_str *fstr)
 {
-	unsigned long pos = file->f_pos;
-	unsigned int bit_pos = 0;
 	struct inode *inode = file_inode(file);
 	struct f2fs_inline_dentry *inline_dentry = NULL;
 	struct page *ipage = NULL;
 	struct f2fs_dentry_ptr d;
 
-	if (pos >= NR_INLINE_DENTRY)
+	if (ctx->pos == NR_INLINE_DENTRY)
 		return 0;
-
-	bit_pos = (pos % NR_INLINE_DENTRY);
 
 	ipage = get_node_page(F2FS_I_SB(inode), inode->i_ino);
 	if (IS_ERR(ipage))
@@ -552,8 +562,8 @@ int f2fs_read_inline_dir(struct file *file, void *dirent, filldir_t filldir,
 
 	make_dentry_ptr(inode, &d, (void *)inline_dentry, 2);
 
-	if (!f2fs_fill_dentries(file, dirent, filldir, &d, 0, bit_pos, fstr))
-		file->f_pos = NR_INLINE_DENTRY;
+	if (!f2fs_fill_dentries(ctx, &d, 0, fstr))
+		ctx->pos = NR_INLINE_DENTRY;
 
 	f2fs_put_page(ipage, 1);
 	return 0;
