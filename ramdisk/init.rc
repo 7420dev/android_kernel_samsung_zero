@@ -513,7 +513,7 @@ on boot
     chmod 0220 /sys/module/lowmemorykiller/parameters/adj
     chown root root /sys/module/lowmemorykiller/parameters/minfree
     chmod 0660 /sys/module/lowmemorykiller/parameters/minfree
-    write /sys/module/lowmemorykiller/parameters/minfree 18432,20820,23212,25600,27990,32768
+    write /sys/module/lowmemorykiller/parameters/minfree 15360,19200,23040,26880,34415,43737
     chmod 0220 /sys/module/lowmemorykiller/parameters/minfree
     chown root system /sys/module/lowmemorykiller/parameters/nul
     chmod 0220 /sys/module/lowmemorykiller/parameters/nul
