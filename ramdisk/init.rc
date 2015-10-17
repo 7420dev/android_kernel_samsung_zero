@@ -514,6 +514,9 @@ on boot
     chown root root /sys/module/lowmemorykiller/parameters/minfree
     chmod 0660 /sys/module/lowmemorykiller/parameters/minfree
     write /sys/module/lowmemorykiller/parameters/minfree 15360,18256,21160,24096,27000,32768
+    chown root root /sys/module/lowmemorykiller/parameters/vmpressure_file_min
+    chmod 0660 /sys/module/lowmemorykiller/parameters/vmpressure_file_min
+    write /sys/module/lowmemorykiller/parameters/vmpressure_file_min 40960
     chmod 0220 /sys/module/lowmemorykiller/parameters/minfree
     chown root system /sys/module/lowmemorykiller/parameters/nul
     chmod 0220 /sys/module/lowmemorykiller/parameters/nul
