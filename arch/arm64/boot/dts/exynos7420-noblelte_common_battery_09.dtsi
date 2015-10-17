@@ -446,7 +446,7 @@
 		battery,siop_wireless_charging_limit_current = <600>;
 		battery,siop_hv_wireless_input_limit_current = <500>;
 		battery,siop_hv_wireless_charging_limit_current = <1000>;
-		battery,siop_call_cv_current = <150>;
-		battery,siop_call_cc_current = <500>;
+		battery,siop_call_cv_current = <125>;
+		battery,siop_call_cc_current = <400>;
 	};
 };

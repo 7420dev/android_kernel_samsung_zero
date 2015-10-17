@@ -6104,6 +6104,7 @@ dhd_remove_if(dhd_pub_t *dhdpub, int ifidx, bool need_rtnl_lock)
 					unregister_netdevice(ifp->net);
 			}
 			ifp->net = NULL;
+			dhdinfo->iflist[ifidx] = NULL;
 		}
 #ifdef DHD_L2_FILTER
 		bcm_l2_filter_arp_table_update(dhdpub->osh, ifp->phnd_arp_table, TRUE,
@@ -6114,7 +6115,6 @@ dhd_remove_if(dhd_pub_t *dhdpub, int ifidx, bool need_rtnl_lock)
 
 		dhd_if_del_sta_list(ifp);
 
-		dhdinfo->iflist[ifidx] = NULL;
 		MFREE(dhdinfo->pub.osh, ifp, sizeof(*ifp));
 
 	}

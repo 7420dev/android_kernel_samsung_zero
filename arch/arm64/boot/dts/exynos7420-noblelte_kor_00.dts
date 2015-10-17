@@ -164,7 +164,7 @@
 						TRACE {
 							wlf,wmfw-file = "trace";
 							wlf,bin-file = "None";
-							wlf,compr-caps = <1 8 0x4 1 8000 16000 24000>;
+							wlf,compr-caps = <1 8 0x4 1 8000 16000 24000 32000>;
 						};
 					};
 				};
@@ -177,6 +177,10 @@
 						};
 						TX_WB {
 							wlf,wmfw-file = "tx-wb";
+							wlf,bin-file = "None";
+						};
+						TX_EVS {
+							wlf,wmfw-file = "tx-evs";
 							wlf,bin-file = "None";
 						};
 						TX_SWB_INTERVIEW {
@@ -204,6 +208,10 @@
 							wlf,wmfw-file = "tx-wb";
 							wlf,bin-file = "tx-wb";
 						};
+						TX_EVS {
+							wlf,wmfw-file = "tx-evs";
+							wlf,bin-file = "tx-evs";
+						};
 						TX_SWB_INTERVIEW {
 							wlf,wmfw-file = "tx-swb";
 							wlf,bin-file = "tx-swb-interview";
@@ -228,6 +236,10 @@
 						RX_WB {
 							wlf,wmfw-file = "rx-anc-wb";
 							wlf,bin-file = "rx-anc-wb";
+						};
+						RX_EVS {
+							wlf,wmfw-file = "rx-anc-evs";
+							wlf,bin-file = "rx-anc-evs";
 						};
 					};
 				};

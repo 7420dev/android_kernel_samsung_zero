@@ -1123,6 +1123,9 @@ static int noble_aif2_hw_params(struct snd_pcm_substream *substream,
 	case 16000:
 		bclk = 512000;
 		break;
+	case 32000:
+		bclk = 1024000;
+		break;
 	default:
 		dev_warn(card->dev,
 			"Unsupported LRCLK %d, falling back to 8000Hz\n",
@@ -1318,7 +1321,7 @@ static struct snd_soc_dai_driver noble_ext_dai[] = {
 			.rate_min = 8000,
 			.rate_max = 48000,
 			.rates = (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
-					SNDRV_PCM_RATE_48000),
+				SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_48000),
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
 		},
 		.capture = {
@@ -1327,7 +1330,7 @@ static struct snd_soc_dai_driver noble_ext_dai[] = {
 			.rate_min = 8000,
 			.rate_max = 48000,
 			.rates = (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |
-					SNDRV_PCM_RATE_48000),
+				SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_48000),
 			.formats = SNDRV_PCM_FMTBIT_S16_LE,
 		},
 	},
