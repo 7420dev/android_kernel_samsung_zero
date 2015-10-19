@@ -6863,7 +6863,7 @@ int selinux_disable(int new_value)
 		return -EINVAL;
 	}
 
-	printk(KERN_INFO "SELinux:  Disabled at runtime.\n");
+	printk(KERN_INFO "SELinux:  Disabling at runtime...\n");
 
 	if (new_value == 1) {
 		/* only when "1" is passed to /sys/fs/selinux/disable */
@@ -6871,17 +6871,24 @@ int selinux_disable(int new_value)
 		selinux_enabled = 0;
 
 		reset_security_ops();
+		printk(KERN_INFO "SELinux:  security ops reset.\n");
+	} else {
+		printk(KERN_INFO "SELinux:  security ops reset skipped.\n");
 	}
 
 	/* Try to destroy the avc node cache */
 	avc_disable();
+	printk(KERN_INFO "SELinux:  avc node cache destroyed.\n");
 
 	/* Unregister netfilter hooks. */
 	selinux_nf_ip_exit();
+	printk(KERN_INFO "SELinux:  netfilter hooks unregistered.\n");
 
 	/* Unregister selinuxfs. */
 	exit_sel_fs();
+	printk(KERN_INFO "SELinux:  selinuxfs unregistered.\n");
 
+	printk(KERN_INFO "SELinux:  Disabled at runtime.\n");
 	return 0;
 }
 #endif
