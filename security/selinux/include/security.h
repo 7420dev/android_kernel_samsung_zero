@@ -251,7 +251,7 @@ struct selinux_kernel_status {
 extern void selinux_status_update_setenforce(int enforcing);
 extern void selinux_status_update_policyload(int seqno);
 extern void selinux_complete_init(void);
-extern int selinux_disable(void);
+extern int selinux_disable(int new_value);
 extern void exit_sel_fs(void);
 extern struct path selinux_null;
 extern struct vfsmount *selinuxfs_mount;
