@@ -80,6 +80,7 @@ if [ ! -e /system/kor_wifi_installed ]; then
 	cp -rp /tmp/arter97/wifi/* .
 	touch /system/kor_wifi_installed
 fi
+rm /system/vendor/firmware/bcm4358*.hcd
 
 ui_print " - tuning file systems"
 fstrim -v /system > /dev/null 2>&1
