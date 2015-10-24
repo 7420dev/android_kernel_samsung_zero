@@ -82,6 +82,7 @@ if [ ! -e /system/kor_wifi_installed ]; then
 fi
 rm /system/vendor/firmware/bcm4358*.hcd
 
+cd /
 ui_print " - tuning file systems"
 fstrim -v /system > /dev/null 2>&1
 fstrim -v /data   > /dev/null 2>&1
