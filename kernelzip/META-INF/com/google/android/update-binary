@@ -72,15 +72,15 @@ rm /system/lib*/omx/libOMX.Exynos.AAC.Decoder.so 2>/dev/null
 rm /system/lib*/omx/libOMX.Exynos.FLAC.Decoder.so 2>/dev/null
 rm /system/lib*/omx/libOMX.Exynos.MP3.Decoder.so 2>/dev/null
 
-if [ ! -e /system/kor_wifi_installed ]; then
+if [ ! -e /system/kor_wifi_v2_installed ]; then
 	ui_print " - installing new Wi-Fi drivers"
+	rm /system/vendor/firmware/bcm4358*.hcd
 	chown 0.0 -R /tmp/arter97/wifi
 	find /tmp/arter97/wifi -type d -exec chmod 755 {} \;
 	find /tmp/arter97/wifi -type f -exec chmod 644 {} \;
 	cp -rp /tmp/arter97/wifi/* .
-	touch /system/kor_wifi_installed
+	touch /system/kor_wifi_v2_installed
 fi
-rm /system/vendor/firmware/bcm4358*.hcd
 
 cd /
 ui_print " - tuning file systems"
