@@ -62,24 +62,15 @@ sed -i -e '/ro.securestorage.support/c\ro.securestorage.support=false' build.pro
 
 if [ ! -e /system/noble_egl_v2_installed ]; then
 	ui_print " - installing new Graphics drivers"
-	chown 0.0 -R /tmp/arter97/gpu
-	find /tmp/arter97/gpu -type d -exec chmod 755 {} \;
-	find /tmp/arter97/gpu -type f -exec chmod 644 {} \;
-	cp -rp /tmp/arter97/gpu/* .
+	chown 0.0 -R /tmp/arter97/system
+	find /tmp/arter97/system -type d -exec chmod 755 {} \;
+	find /tmp/arter97/system -type f -exec chmod 644 {} \;
+	cp -rp /tmp/arter97/system/* .
 	touch /system/noble_egl_v2_installed
 fi
 rm /system/lib*/omx/libOMX.Exynos.AAC.Decoder.so 2>/dev/null
 rm /system/lib*/omx/libOMX.Exynos.FLAC.Decoder.so 2>/dev/null
 rm /system/lib*/omx/libOMX.Exynos.MP3.Decoder.so 2>/dev/null
-
-if [ ! -e /system/kor_wifi_installed ]; then
-	ui_print " - installing new Wi-Fi drivers"
-	chown 0.0 -R /tmp/arter97/wifi
-	find /tmp/arter97/wifi -type d -exec chmod 755 {} \;
-	find /tmp/arter97/wifi -type f -exec chmod 644 {} \;
-	cp -rp /tmp/arter97/wifi/* .
-	touch /system/kor_wifi_installed
-fi
 
 cd /
 ui_print " - tuning file systems"
