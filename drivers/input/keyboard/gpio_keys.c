@@ -456,7 +456,6 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
 
 	if (button->code == KEY_POWER) {
-		schedule_work(&sync_system_work);
 		if (!!state) {
 			printk(KERN_INFO "PWR key is pressed\n");
 		}
@@ -476,6 +475,9 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 
 	input_sync(input);
 
+	if (button->code == KEY_POWER) {
+		schedule_work_on(0, &sync_system_work);
+	}
 #ifdef CONFIG_INPUT_BOOSTER
 	if (button->code == KEY_HOMEPAGE)
 		input_booster_send_event(BOOSTER_DEVICE_KEY, !!state);
