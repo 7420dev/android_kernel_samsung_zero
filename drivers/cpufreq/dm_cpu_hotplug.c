@@ -517,6 +517,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 {
 	int i = 0;
 	int ret = 0;
+	struct cpufreq_policy *policy;
 #ifdef DM_HOTPLUG_DEBUG
 	char cmddesc[25];
 
@@ -675,6 +676,10 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 							ret = cpu_up(i);
 							if (ret)
 								goto blk_out;
+
+							policy = cpufreq_cpu_get(i);
+							policy->cur = policy->max;
+							cpufreq_update_policy(i);
 						}
 					}
 
@@ -684,6 +689,10 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 							ret = cpu_up(i);
 							if (ret)
 								goto blk_out;
+
+							policy = cpufreq_cpu_get(i);
+							policy->cur = policy->max;
+							cpufreq_update_policy(i);
 						}
 					}
 				} else {
