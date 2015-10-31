@@ -103,12 +103,6 @@ config ARM_EXYNOS5440_CPUFREQ
 	  different than previous exynos controllers so not using
 	  the common exynos framework.
 
-config INTELLI_PLUG
-        bool "Enable intelli-plug cpu hotplug driver"
-        default n
-        help
-          Generic Intelli-plug cpu hotplug driver for ARM SOCs
-
 config ARM_HIGHBANK_CPUFREQ
 	tristate "Calxeda Highbank-based"
 	depends on ARCH_HIGHBANK

@@ -966,7 +966,6 @@ static struct notifier_block exynos_dm_hotplug_reboot_nb = {
 };
 
 #ifdef CONFIG_SCHED_HMP
-extern unsigned long avg_nr_running(void);
 static void update_nr_running_count(void)
 {
 	int ret = 0;
