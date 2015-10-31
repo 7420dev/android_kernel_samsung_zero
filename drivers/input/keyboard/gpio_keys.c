@@ -448,7 +448,6 @@ static struct attribute_group sec_key_attr_group = {
 	.attrs = sec_key_attrs,
 };
 
-extern void force_unblank(void);
 static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 {
 	const struct gpio_keys_button *button = bdata->button;
@@ -476,10 +475,6 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 
 	input_sync(input);
 
-	if (((button->code == KEY_POWER) || (button->code == KEY_HOMEPAGE))
-	    && !!state) {
-		force_unblank();
-	}
 	if (button->code == KEY_POWER) {
 		schedule_work_on(0, &sync_system_work);
 	}
