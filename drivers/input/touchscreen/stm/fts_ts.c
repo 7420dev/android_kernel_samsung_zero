@@ -72,12 +72,6 @@
 #include <linux/input/mt.h>
 #include "fts_ts.h"
 
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-#include <linux/input/doubletap2wake.h>
-#else
-#define dt2w_switch 0
-#endif
-
 static struct i2c_driver fts_i2c_driver;
 
 #ifdef FTS_SUPPORT_TOUCH_KEY
@@ -921,11 +915,6 @@ static unsigned char fts_event_handler_type_b(struct fts_ts_info *info,
 #ifdef FTS_SUPPORT_SIDE_GESTURE
 		case EVENTID_SIDE_TOUCH:
 		case EVENTID_SIDE_TOUCH_DEBUG:
-			if (dt2w_switch) {
-				input_sync(info->input_dev);
-				break;
-			}
-
 			if (info->board->support_sidegesture) {
 				unsigned char event_type = data[1 + EventNum * FTS_EVENT_SIZE];
 
@@ -1045,7 +1034,7 @@ static unsigned char fts_event_handler_type_b(struct fts_ts_info *info,
 			break;
 
 		case EVENTID_ENTER_POINTER:
-			if (!dt2w_switch && info->fts_power_state == FTS_POWER_STATE_LOWPOWER)
+			if (info->fts_power_state == FTS_POWER_STATE_LOWPOWER)
 				break;
 
 			info->touch_count++;
@@ -1053,7 +1042,7 @@ static unsigned char fts_event_handler_type_b(struct fts_ts_info *info,
 			booster_restart = true;
 #endif
 		case EVENTID_MOTION_POINTER:
-			if (!dt2w_switch && info->fts_power_state == FTS_POWER_STATE_LOWPOWER) {
+			if (info->fts_power_state == FTS_POWER_STATE_LOWPOWER) {
 				tsp_debug_info(true, &info->client->dev, "%s: low power mode\n", __func__);
 				fts_release_all_finger(info);
 				break;
@@ -1071,7 +1060,7 @@ static unsigned char fts_event_handler_type_b(struct fts_ts_info *info,
 				break;
 			}
 
-			if (!dt2w_switch && info->fts_power_state == FTS_POWER_STATE_LOWPOWER)
+			if (info->fts_power_state == FTS_POWER_STATE_LOWPOWER)
 				break;
 
 			x = data[1 + EventNum * FTS_EVENT_SIZE] +
@@ -1134,7 +1123,7 @@ static unsigned char fts_event_handler_type_b(struct fts_ts_info *info,
 			break;
 
 		case EVENTID_LEAVE_POINTER:
-			if (!dt2w_switch && info->fts_power_state == FTS_POWER_STATE_LOWPOWER)
+			if (info->fts_power_state == FTS_POWER_STATE_LOWPOWER)
 				break;
 
 			if (info->touch_count <= 0) {
@@ -2535,13 +2524,6 @@ static int fts_stop_device(struct fts_ts_info *info)
 
 	mutex_lock(&info->device_mutex);
 
-#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
-	if (dt2w_toggled) {
-		info->lowpower_mode = true;
-		dt2w_toggled = false;
-	}
-#endif
-
 	if (info->touch_stopped) {
 		tsp_debug_err(true, &info->client->dev, "%s already power off\n", __func__);
 		goto out;
@@ -2566,8 +2548,7 @@ static int fts_stop_device(struct fts_ts_info *info)
 			fts_delay(20);
 		}
 #endif
-		if (!dt2w_switch)
-			fts_command(info, FTS_CMD_LOWPOWER_MODE); //FIXME
+		fts_command(info, FTS_CMD_LOWPOWER_MODE);
 
 		if (device_may_wakeup(&info->client->dev))
 			enable_irq_wake(info->irq);
