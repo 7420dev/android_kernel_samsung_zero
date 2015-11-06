@@ -938,6 +938,7 @@ on property:sys.sysctl.extra_free_kbytes=*
 # Activate Background Compaction
 on property:sys.sysctl.compact_memory=1
     write /proc/sys/vm/compact_memory 1
+    write /sys/block/zram0/compact 1
     setprop sys.sysctl.compact_memory 0
 
 # "tcp_default_init_rwnd" Is too long!
