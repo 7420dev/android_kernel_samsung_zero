@@ -926,11 +926,6 @@ on property:vold.decrypt=trigger_shutdown_framework
     class_reset late_start
     class_reset main
 
-on property:selinux.reload_policy=1
-    chown system system /sys/fs/selinux/enforce
-    chown -R system system /sys/fs/selinux/booleans
-    chown system system /sys/fs/selinux/commit_pending_bools
-
 on property:sys.powerctl=*
     powerctl ${sys.powerctl}
 
@@ -955,10 +950,6 @@ on property:init.svc.bootanim=stopped
     start lmktweak
     start proploader
     write /proc/sys/vm/compact_memory 1
-
-# Reload SE Android Policy for MDM
-on property:persist.security.mdm.policy=1
-    setprop selinux.reload_policy 1
 
 ## Daemon processes to be run by init.
 ##
