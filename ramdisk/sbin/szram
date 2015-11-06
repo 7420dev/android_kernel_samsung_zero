@@ -1,0 +1,18 @@
+#!/res/busybox sh
+
+export PATH=/res/asset:$PATH
+
+SWAPSIZE=1024
+PRIORITY=10
+COMPSTREAMS=4
+COMPTYPE=lz4
+
+if cat /proc/swaps | grep -q zram ; then
+	echo "zram is already enabled!"
+	exit 1
+fi
+echo "$COMPSTREAMS" > /sys/block/zram0/max_comp_streams
+echo "$COMPTYPE" > /sys/block/zram0/comp_algorithm
+echo $(($SWAPSIZE * 1048576)) > /sys/block/zram0/disksize
+mkswap /dev/block/zram0
+swapon -p $PRIORITY /dev/block/zram0
