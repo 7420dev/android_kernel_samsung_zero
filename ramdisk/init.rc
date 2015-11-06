@@ -953,6 +953,7 @@ on property:sys.sysctl.tcp_def_init_rwnd=*
 on property:init.svc.bootanim=stopped
     start uci
     start lmktweak
+    start proploader
     write /proc/sys/vm/compact_memory 1
 
 # Reload SE Android Policy for MDM
@@ -968,6 +969,11 @@ service sec-sh /system/bin/sh /system/etc/init.sec.boot.sh
     oneshot
     
 service uci /sbin/uci
+    user root
+    oneshot
+    disabled
+
+service proploader /init.prop.sh
     user root
     oneshot
     disabled
