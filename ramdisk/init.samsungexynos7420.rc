@@ -418,8 +418,8 @@ on boot
     write /sys/devices/system/cpu/cpu4/cpufreq/cafactive/io_is_busy 1
     write /sys/devices/virtual/sec/sec_slow/io_is_busy 1
     # boost during boot
-    write /sys/devices/system/cpu/cpu0/cpufreq/cafactive/boost 1
-    write /sys/devices/system/cpu/cpu4/cpufreq/cafactive/boost 1
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 1500000
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 2100000
 
     # CPU Idle
     chown system system /sys/module/cpuidle_exynos64/parameters/enable_mask
@@ -883,8 +883,8 @@ on property:sys.boot_completed=1
     write /sys/devices/system/cpu/cpu5/online 1
     write /sys/devices/system/cpu/cpu6/online 1
     write /sys/devices/system/cpu/cpu7/online 1
-    write /sys/devices/system/cpu/cpu0/cpufreq/cafactive/boost 0
-    write /sys/devices/system/cpu/cpu4/cpufreq/cafactive/boost 0
+    write /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 400000
+    write /sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq 800000
     start fstrim-service
 
 #
