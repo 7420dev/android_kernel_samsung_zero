@@ -1094,6 +1094,25 @@ static long do_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		var = info->var;
 		unlock_fb_info(info);
 
+		pr_info("FB: %d %d %d | %d %d %d | %d\n",
+			 var.upper_margin,var.lower_margin,var.yres,
+			 var.left_margin,var.right_margin,var.xres,
+			 var.pixclock);
+
+		pr_info("FB: %d %d %d %d | %d %d %d %d | %d\n",
+			 var.upper_margin,var.lower_margin,var.vsync_len,var.yres,
+			 var.left_margin,var.right_margin,var.hsync_len,var.xres,
+			 var.pixclock);
+
+		/* 60.00 Hz */
+		var.upper_margin = 0;
+		var.lower_margin = 83173;
+		var.yres = 2560;
+		var.left_margin = 0;
+		var.right_margin = 6037;
+		var.xres = 1440;
+		var.pixclock = 26;
+
 		ret = copy_to_user(argp, &var, sizeof(var)) ? -EFAULT : 0;
 		break;
 	case FBIOPUT_VSCREENINFO:
