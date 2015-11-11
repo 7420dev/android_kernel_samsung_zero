@@ -491,8 +491,8 @@ on boot
 # On-Board DM
     chmod 6755 /system/bin/dmm_v2
 
-# zram
-    write /proc/sys/vm/swappiness 65
+# SSWAP
+    write /proc/sys/vm/swappiness 130
 
     # FM Radio
     chmod 0640 /dev/fmradio
@@ -961,8 +961,8 @@ service cs_service /system/bin/cs
 on property:sys.mobicoredaemon.enable=true
     start cs_service
 
-# zram
-service swapon /sbin/szram
+# SSWAP
+service swapon /sbin/sswap
     class core
     user root
     group root
