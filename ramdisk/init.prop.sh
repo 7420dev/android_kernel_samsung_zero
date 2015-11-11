@@ -4,9 +4,9 @@ exec 2>&1 > /dev/kmsg
 
 export PATH=/res/asset:$PATH
 
-if [[ $(cat /data/media/0/arter97/adaptive_lmk) == "1" ]]; then
-	echo "Enabling Adaptive LMK ..."
-	echo "1" > /sys/module/lowmemorykiller/parameters/enable_adaptive_lmk
+if [[ $(cat /data/media/0/arter97/adaptive_lmk) == "0" ]]; then
+	echo "Disabling Adaptive LMK ..."
+	echo "0" > /sys/module/lowmemorykiller/parameters/enable_adaptive_lmk
 fi
 
 if [[ $(cat /data/media/0/arter97/fade_led) == "0" ]]; then
