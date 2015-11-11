@@ -18,3 +18,9 @@ if [[ $(cat /data/media/0/arter97/dualcore_blank) == "0" ]]; then
 	echo "Disabling dualcore_blank mode ..."
 	echo "3" > /sys/power/enable_dm_hotplug
 fi
+if [[ $(cat /data/media/0/arter97/dualcore_blank) == "2" ]]; then
+	echo "Allowing all CPUs to be turned on during screen-off ..."
+	echo "3" > /sys/power/enable_dm_hotplug
+	sleep 0.5
+	echo "5" > /sys/power/enable_dm_hotplug
+fi
