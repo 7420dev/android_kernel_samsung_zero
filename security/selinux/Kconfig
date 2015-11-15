@@ -52,16 +52,6 @@ config SECURITY_SELINUX_DISABLE
 
 	  If you are unsure how to answer this question, answer N.
 
-config SECURITY_SELINUX_DISABLE_LOAD
-	bool "NSA SELinux disable policy load"
-	depends on SECURITY_SELINUX
-	default n
-	help
-	  Enabling this option will not allow SELinux to load any policies
-	  while reporting the userspace that it did.
-
-	  If you are unsure how to answer this question, answer N.
-
 config SECURITY_SELINUX_DEVELOP
 	bool "NSA SELinux Development Support"
 	depends on SECURITY_SELINUX

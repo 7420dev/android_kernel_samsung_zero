@@ -2002,9 +2002,6 @@ static int security_preserve_bools(struct policydb *p);
  */
 int security_load_policy(void *data, size_t len)
 {
-#ifdef CONFIG_SECURITY_SELINUX_DISABLE_LOAD
-	return 0;
-#else
 	struct policydb oldpolicydb, newpolicydb;
 	struct sidtab oldsidtab, newsidtab;
 	struct selinux_mapping *oldmap, *map = NULL;
@@ -2137,7 +2134,7 @@ err:
 	sidtab_destroy(&newsidtab);
 	policydb_destroy(&newpolicydb);
 	return rc;
-#endif
+
 }
 
 size_t security_policydb_len(void)
