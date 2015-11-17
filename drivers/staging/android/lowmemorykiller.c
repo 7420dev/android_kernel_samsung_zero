@@ -566,7 +566,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 				file_after_kb = global_page_state(NR_FILE_PAGES) *
 					(long)(PAGE_SIZE / 1024);
 
-				pr_info("LMK::reclaim_walk_mm() time, %ld, us, " \
+				pr_err("LMK::reclaim_walk_mm() time, %ld, us, " \
 						"free inc, %ld, kb, file cache dec, %ld, kb \n",
 						(long)ktime_to_ns(reclaim_diff) / 1000,
 						free_after_kb - free_before_kb,
