@@ -1688,7 +1688,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
 		 * Tag a zone as congested if all the dirty pages scanned were
 		 * backed by a congested BDI and wait_iff_congested will stall.
 		 */
-		if (nr_dirty && nr_dirty == nr_congested && zone)
+		if (nr_dirty && nr_dirty == nr_congested)
 			zone_set_flag(zone, ZONE_CONGESTED);
 
 		/*
