@@ -8,15 +8,13 @@ fi
 if [ -e boot.img ] ; then
 	rm arter97-kernel-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat version)".zip 2>/dev/null
 	cp boot.img kernelzip/boot.img
-	\ls ramdisk/res/asset > kernelzip/busybox.list
-	cp ramdisk/res/busybox kernelzip/
 	cd kernelzip/
 	7z a -mx9 arter97-kernel-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat ../version)"-tmp.zip *
 	zipalign -v 4 arter97-kernel-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat ../version)"-tmp.zip ../arter97-kernel-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat ../version)".zip
 	rm arter97-kernel-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat ../version)"-tmp.zip
 	cd ..
 	ls -al arter97-kernel-"$(git rev-parse --abbrev-ref HEAD)"-"$(cat version)".zip
-	rm kernelzip/boot.img kernelzip/busybox.list kernelzip/busybox
+	rm kernelzip/boot.img
 fi
 
 if [ -e recovery.img ] ; then
