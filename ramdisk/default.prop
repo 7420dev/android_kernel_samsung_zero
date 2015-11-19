@@ -14,6 +14,7 @@ dalvik.vm.image-dex2oat-Xms=64m
 dalvik.vm.image-dex2oat-Xmx=64m
 ro.dalvik.vm.native.bridge=0
 
+# START OVERRIDE (arter97 kernel)
 # SELinux & Knox related
 persist.cne.feature=0
 persist.security.ams.enforcing=0
