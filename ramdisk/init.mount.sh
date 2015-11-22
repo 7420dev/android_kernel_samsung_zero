@@ -49,10 +49,3 @@ if [[ $ext4 == "1" ]]; then
 fi
 
 touch /dev/block/mounted
-
-if [ -e /system/swapfile ]; then
-	mount -o rw,remount /system
-	fstrim -v /system
-	mkswap /system/swapfile
-	swapon -d[once] -p 5 /system/swapfile
-fi
