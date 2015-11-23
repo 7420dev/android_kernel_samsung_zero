@@ -18,8 +18,8 @@ cat << CTAG
 	{ SSeekBar:{
        		title:"CPU max frequency",
 		description:"Set the maximum freqency the CPU scales up to.",
-		default:`cat /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq`,
-		action:"generic /sys/devices/system/cpu/cpu4/cpufreq/scaling_max_freq",
+		default:`cat /sys/devices/system/cpu/cpu4/cpufreq/ren_max_freq`,
+		action:"generic /sys/devices/system/cpu/cpu4/cpufreq/ren_max_freq",
 		values:{
 `
 			for FREQ in $(cat /sys/devices/system/cpu/cpufreq/mp-cpufreq/cluster1_freq_table); do
