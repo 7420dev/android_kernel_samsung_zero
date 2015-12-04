@@ -42,6 +42,8 @@
 #include <mach/regs-pmu.h>
 #endif
 
+extern void lcd_is_on_override(bool on);
+
 #include "s5p_mfc_common.h"
 #include "s5p_mfc_intr.h"
 #include "s5p_mfc_inst.h"
@@ -2287,6 +2289,11 @@ static int s5p_mfc_open(struct file *file)
 		}
 	}
 
+	if (dev->num_inst >= 1) {
+		/* Enable hotplugging */
+		lcd_is_on_override(false);
+	}
+
 	mfc_info_ctx("MFC open completed [%d:%d] dev = %p, ctx = %p\n",
 			dev->num_drm_inst, dev->num_inst, dev, ctx);
 	mutex_unlock(&dev->mfc_mutex);
@@ -2585,6 +2592,11 @@ static int s5p_mfc_release(struct file *file)
 	}
 	dev->ctx[ctx->num] = 0;
 	kfree(ctx);
+
+	if (dev->num_inst == 0) {
+		/* Disable hotplugging */
+		lcd_is_on_override(true);
+	}
 
 	mfc_info_dev("mfc driver release finished [%d:%d], dev = %p\n",
 			dev->num_drm_inst, dev->num_inst, dev);
