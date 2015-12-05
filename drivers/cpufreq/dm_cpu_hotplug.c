@@ -58,7 +58,6 @@ static DEFINE_MUTEX(cluster0_hotplug_in_lock);
 #ifdef CONFIG_HOTPLUG_THREAD_STOP
 static DEFINE_MUTEX(thread_manage_lock);
 #endif
-static DEFINE_MUTEX(override_lock);
 
 static struct task_struct *dm_hotplug_task;
 #ifdef CONFIG_HOTPLUG_THREAD_STOP
@@ -67,7 +66,6 @@ static bool thread_start = false;
 static unsigned int low_stay_threshold = DEFAULT_LOW_STAY_THRSHD;
 static int cpu_util[NR_CPUS];
 static unsigned int cur_load_freq = 0;
-static bool unblank = true;
 static bool lcd_is_on = true;
 static bool forced_hotplug = false;
 static bool in_low_power_mode = false;
@@ -421,46 +419,6 @@ static void thread_manage_work(struct work_struct *work)
 static DECLARE_WORK(manage_work, thread_manage_work);
 #endif
 
-static void set_lcd_is_on(bool on)
-{
-	if (on) {
-		lcd_is_on = true;
-		delay = POLLING_MSEC_DISP_ON;
-
-#ifdef CONFIG_HOTPLUG_THREAD_STOP
-		if (thread_manage_wq) {
-			if (work_pending(&manage_work))
-				flush_work(&manage_work);
-			thread_start = false;
-			queue_work(thread_manage_wq, &manage_work);
-		}
-#endif
-	} else {
-		lcd_is_on = false;
-		delay = POLLING_MSEC_DISP_OFF;
-
-#ifdef CONFIG_HOTPLUG_THREAD_STOP
-		if (thread_manage_wq) {
-			if (work_pending(&manage_work))
-				flush_work(&manage_work);
-			thread_start = true;
-			queue_work(thread_manage_wq, &manage_work);
-		}
-#endif
-	}
-}
-void lcd_is_on_override(bool on)
-{
-	mutex_lock(&override_lock);
-
-	if (unblank) {
-		set_lcd_is_on(on);
-		forced_hotplug = !on;
-	}
-
-	mutex_unlock(&override_lock);
-}
-
 static int fb_state_change(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
@@ -482,10 +440,19 @@ static int fb_state_change(struct notifier_block *nb,
 
 	switch (blank) {
 	case FB_BLANK_POWERDOWN:
-		unblank = false;
-		set_lcd_is_on(false);
+		lcd_is_on = false;
 		pr_info("LCD is off\n");
 
+		delay = POLLING_MSEC_DISP_OFF;
+
+#ifdef CONFIG_HOTPLUG_THREAD_STOP
+		if (thread_manage_wq) {
+			if (work_pending(&manage_work))
+				flush_work(&manage_work);
+			thread_start = true;
+			queue_work(thread_manage_wq, &manage_work);
+		}
+#endif
 		break;
 	case FB_BLANK_UNBLANK:
 		/*
@@ -493,10 +460,19 @@ static int fb_state_change(struct notifier_block *nb,
 		 * This line of code release max limit when LCD is
 		 * turned on.
 		 */
-		unblank = true;
-		set_lcd_is_on(true);
+		lcd_is_on = true;
 		pr_info("LCD is on\n");
 
+		delay = POLLING_MSEC_DISP_ON;
+
+#ifdef CONFIG_HOTPLUG_THREAD_STOP
+		if (thread_manage_wq) {
+			if (work_pending(&manage_work))
+				flush_work(&manage_work);
+			thread_start = false;
+			queue_work(thread_manage_wq, &manage_work);
+		}
+#endif
 		break;
 	default:
 		break;
