@@ -183,7 +183,7 @@ static struct dst_entry *mptcp_v6_route_req(struct sock *sk, struct flowi *fl,
 /* Similar to tcp6_request_sock_ops */
 struct request_sock_ops mptcp6_request_sock_ops __read_mostly = {
 	.family		=	AF_INET6,
-	.obj_size	=	sizeof(struct mptcp_request_sock),
+	.obj_size	=	sizeof(struct mptcp6_request_sock),
 	.rtx_syn_ack	=	mptcp_v6_rtx_synack,
 	.send_ack	=	tcp_v6_reqsk_send_ack,
 	.destructor	=	mptcp_v6_reqsk_destructor,

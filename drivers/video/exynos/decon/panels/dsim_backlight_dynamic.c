@@ -673,19 +673,28 @@ static void dsim_panel_gamma_ctrl_for_hmt(struct dsim_device *dsim)
 static void dsim_panel_aid_ctrl_for_hmt(struct dsim_device *dsim)
 {
 	u8 *aid = NULL;
+	unsigned char SEQ_AID[AID_CMD_CNT_MAX] = {0, };
+
 	aid = get_aid_from_index_for_hmt(dsim, dsim->priv.hmt_br_index);
+
 	if (aid == NULL) {
 		dsim_err("%s : faield to get aid value\n", __func__);
 		return;
 	}
-	if (dsim_write_hl_data(dsim, aid, aid_dimming_dynamic.aid_cmd_cnt + 1) < 0)
-		dsim_err("%s : failed to write hmt aid \n", __func__);
+
+	SEQ_AID[0] = aid[0];
+	memcpy(&SEQ_AID[1], dsim->priv.aid, aid_dimming_dynamic.aid_cmd_cnt - 1);
+	memcpy(&SEQ_AID[aid_dimming_dynamic.aid_reg_offset], aid + 1, aid_dimming_dynamic.aid_cmd_cnt - aid_dimming_dynamic.aid_reg_offset + 1);
+
+	if (dsim_write_hl_data(dsim, SEQ_AID, aid_dimming_dynamic.aid_cmd_cnt) < 0)
+		dsim_err("%s : failed to write aid \n", __func__);
+
 }
 
 static void dsim_panel_set_elvss_for_hmt(struct dsim_device *dsim)
 {
 	u8 *elvss = NULL;
-	unsigned char SEQ_ELVSS[ELVSS_LEN_MAX] = {aid_dimming_dynamic.elvss_reg, };
+	unsigned char SEQ_ELVSS[ELVSS_LEN_MAX] = {0, };
 
 	SEQ_ELVSS[0] = aid_dimming_dynamic.elvss_reg;
 	elvss = get_elvss_from_index_for_hmt(dsim, dsim->priv.hmt_br_index, dsim->priv.acl_enable);
@@ -696,11 +705,10 @@ static void dsim_panel_set_elvss_for_hmt(struct dsim_device *dsim)
 	memcpy(&SEQ_ELVSS[1], dsim->priv.elvss_set, aid_dimming_dynamic.elvss_len - 1);
 	memcpy(SEQ_ELVSS, elvss, aid_dimming_dynamic.elvss_cmd_cnt);
 
-	if(UNDER_MINUS_20(dsim->priv.temperature))				// tset
-		SEQ_ELVSS[aid_dimming_dynamic.elvss_len - 1] -= aid_dimming_dynamic.tset_minus_offset;
-
-	if (dsim_write_hl_data(dsim, SEQ_ELVSS, aid_dimming_dynamic.elvss_len) < 0)
-		dsim_err("%s : failed to write elvss \n", __func__);
+	SEQ_ELVSS[aid_dimming_dynamic.elvss_len - 1] += dsim_panel_get_elvssoffset(dsim);
+	dsim_info("%s elvss ha3/hf3\n", __func__);
+	memcpy(dsim->priv.tset, &SEQ_ELVSS[1], aid_dimming_dynamic.elvss_len - 1);
+	dsim_panel_set_tset(dsim, 1);
 }
 
 static int low_level_set_brightness_for_hmt(struct dsim_device *dsim ,int force)
@@ -724,8 +732,6 @@ static int low_level_set_brightness_for_hmt(struct dsim_device *dsim ,int force)
 		dsim_err("%s : failed to write gamma \n", __func__);
 
 	dsim_panel_set_acl(dsim, force);
-
-	dsim_panel_set_tset(dsim, force);
 
 	if (dsim_write_hl_data(dsim, SEQ_TEST_KEY_OFF_FC, ARRAY_SIZE(SEQ_TEST_KEY_OFF_FC)) < 0)
 		dsim_err("%s : fail to write F0 on command.\n", __func__);

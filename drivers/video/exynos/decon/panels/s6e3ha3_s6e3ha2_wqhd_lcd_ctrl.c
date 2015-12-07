@@ -923,164 +923,6 @@ struct SmtDimInfo dimming_info_HF3_FILE[MAX_BR_INFO] = { // add hbm array
 };
 
 
-
-#ifdef CONFIG_LCD_HMT
-/* basic data format hmt
- index, realbr, refbr, reference gamma, aid_reg_value0(hex),... ,aid_reg_value3(hex),
- 0, 2, 113, 220/215, aid[0], ... , aid[3]
-*/
-
-static int parse_hmt_basic_data(struct panel_private *panel, char *buf)
-{
-	int i;
-	int ret = 0;
-	int index, realbr, refbr, gamma;
-	int aid[HMT_AID_REG_CNT];
-	char *aidtbl = NULL;
-	struct SmtDimInfo *diminfo = (struct SmtDimInfo *)panel->hmt_dim_info;
-
-	ret = sscanf(buf, "%d, %d, %d, %d, %x, %x, %x, %x",
-			&index, &realbr, &refbr, &gamma,
-			&aid[0], &aid[1], &aid[2], &aid[3]);
-	if (ret != HMT_BASIC_PARAM_ELEMENT_CNT) {
-		dsim_err("%s : invalid arg\n", __func__);
-		ret = -EINVAL;
-		goto parse_exit;
-	}
-	if (index > HMT_MAX_BR_INFO) {
-		dsim_err("%s : invalid index : %d\n", __func__, index);
-		ret = -EINVAL;
-		goto parse_exit;
-	}
-
-#ifdef A3_LINE_DEBUG
-	dsim_info("index:%d, realbr:%d, refbr:%d, gamma:%d, aid[0]:%x, aid[1]:%x, aid[2]:%x, aid[3]:%x\n",
-		index, realbr, refbr, gamma, aid[0], aid[1], aid[2], aid[3]);
-#endif
-
-	diminfo[index].br = realbr;
-	diminfo[index].refBr= refbr;
-	if (gamma == REF_GAMMA2_2) {
-		diminfo[index].cGma = gma2p20;
-	} else {
-		diminfo[index].cGma = gma2p15;
-	}
-	aidtbl = (char *)diminfo[index].aid;
-	if (aidtbl) {
-		for (i = 0; i < HMT_AID_REG_CNT; i++)
-			aidtbl[i] = aid[i];
-	}
-parse_exit:
-	return ret;
-}
-
-
-/* color shift data format
- index, value[0], ...,  value[20]
- 0, 2, 113,
-*/
-static int parse_hmt_ref_shift(struct panel_private *panel, char *buf)
-{
-	int i;
-	int ret = 0;
-	int index;
-	int shift[REF_SHIFT_CNT];
-	char *shifttbl = NULL;
-#ifdef A3_LINE_DEBUG
-	int cnt = 0;
-	char strbuf[512]= {0, };
-#endif
-	struct SmtDimInfo *diminfo = (struct SmtDimInfo *)panel->hmt_dim_info;
-
-	ret = sscanf(buf, "%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d",
-			&index,
-			&shift[0], &shift[1], &shift[2], &shift[3], &shift[4],
-			&shift[5], &shift[6], &shift[7], &shift[8], &shift[9]);
-	if (ret != REG_PARAM_ELEMENT_CNT) {
-		dsim_err("%s : invalid arg\n", __func__);
-		ret = -EINVAL;
-		goto parse_exit;
-	}
-	if (index > MAX_BR_INFO) {
-		dsim_err("%s : invalid index : %d\n", __func__, index);
-		ret = -EINVAL;
-		goto parse_exit;
-	}
-
-#ifdef A3_LINE_DEBUG
-	cnt = sprintf(strbuf, "index : %d ", index);
-	for (i = 0; i < REF_SHIFT_CNT; i++) {
-		cnt += sprintf(strbuf+cnt, "%d ", shift[i]);
-	}
-	dsim_info("%s\n", strbuf);
-#endif
-
-	shifttbl = (char *)diminfo[index].rTbl;
-	if (shifttbl) {
-		for (i = 0; i < REF_SHIFT_CNT; i++)
-			shifttbl[i] = shift[i];
-	}
-
-parse_exit:
-	return ret;
-}
-
-
-static int parse_hmt_color_shift(struct panel_private *panel, char *buf)
-{
-	int i;
-	int ret = 0;
-	int index;
-	int color[COLOR_SHIFT_CNT];
-	char *colortbl = NULL;
-#ifdef A3_LINE_DEBUG
-	int cnt = 0;
-	char strbuf[512]= {0, };
-#endif
-	struct SmtDimInfo *diminfo = (struct SmtDimInfo *)panel->hmt_dim_info;
-
-	ret = sscanf(buf, "%d, \
-			%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, \
-			%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, \
-			%d, %d, %d, %d, %d, %d, %d, %d, %d, %d", &index,
-			&color[0], &color[1], &color[2], &color[3], &color[4],
-			&color[5], &color[6], &color[7], &color[8], &color[9],
-			&color[10], &color[11], &color[12], &color[13], &color[14],
-			&color[15], &color[16], &color[17], &color[18], &color[19],
-			&color[20], &color[21], &color[22], &color[23], &color[24],
-			&color[25], &color[26], &color[27], &color[28], &color[29]);
-
-	if (ret != COLOR_PARAM_ELEMENT_CNT) {
-		dsim_err("%s : invalid arg\n", __func__);
-		ret = -EINVAL;
-		goto parse_exit;
-	}
-	if (index > MAX_BR_INFO) {
-		dsim_err("%s : invalid index : %d\n", __func__, index);
-		ret = -EINVAL;
-		goto parse_exit;
-	}
-
-#ifdef A3_LINE_DEBUG
-	cnt = sprintf(strbuf, "index : %d ", index);
-	for (i = 0; i < COLOR_SHIFT_CNT; i++) {
-		cnt += sprintf(strbuf+cnt, "%d ", color[i]);
-	}
-	dsim_info("%s\n",strbuf);
-#endif
-
-	colortbl = (char *)diminfo[index].cTbl;
-	if (colortbl) {
-		for (i = 0; i < COLOR_SHIFT_CNT; i++)
-			colortbl[i] = color[i];
-	}
-
-parse_exit:
-	return ret;
-}
-#endif
-
-
 static int read_buf_to_finalchar(char *buf, char *result, unsigned int offset)
 {
 	int i = 0;
@@ -1398,10 +1240,7 @@ static int octa_a3_read_dim_data(struct panel_private *panel)
 	char *filebuf = NULL;
 	char tempbuf[TEMP_BUF_SIZE];
 	struct dim_data *dimming;
-#ifdef CONFIG_LCD_HMT
-	struct dim_data *hmt_dimming;
-	struct SmtDimInfo *hmt_diminfo = (struct SmtDimInfo *)panel->hmt_dim_info;
-#endif
+
 #ifdef A3_LINE_DEBUG
 	int j;
 	int debugbufcnt;
@@ -1409,19 +1248,6 @@ static int octa_a3_read_dim_data(struct panel_private *panel)
 #endif
 	struct SmtDimInfo *diminfo = (struct SmtDimInfo *)panel->dim_info;
 
-#ifdef CONFIG_LCD_HMT
-	int (*parse_fn[9])(struct panel_private*, char *) = {
-		parse_basic_data,
-		parse_ref_shift,
-		parse_color_shift,
-		parse_elvss_low_temp,
-		parse_vint_tbl,
-		parse_aor_interpolation,
-		parse_hmt_basic_data,
-		parse_hmt_ref_shift,
-		parse_hmt_color_shift,
-	};
-#else
 	int (*parse_fn[6])(struct panel_private*, char *) = {
 		parse_basic_data,
 		parse_ref_shift,
@@ -1431,7 +1257,6 @@ static int octa_a3_read_dim_data(struct panel_private *panel)
 		parse_aor_interpolation,
 	};
 
-#endif
 	dsim_info("%s was called\n", __func__);
 	if(panel->strDatFile == NULL) {
 		ret = -EINVAL;
@@ -1501,18 +1326,6 @@ static int octa_a3_read_dim_data(struct panel_private *panel)
 				dsim_info("a3 line parse aor interpolation info\n");
 				parsephase = PHASE_AOR_INTERPOLATION;
 			}
-#ifdef CONFIG_LCD_HMT
-			else if (strncmp(tempbuf, PHASE_HMT_BASIC_STRING, strlen(PHASE_HMT_BASIC_STRING)) == 0) {
-				dsim_info("a3 line parse hmt basic info\n");
-				parsephase = PHASE_HMT_BASIC_INFO;
-			} else if (strncmp(tempbuf, PHASE_HMT_REFERENCE_STRING, strlen(PHASE_HMT_REFERENCE_STRING)) == 0) {
-				dsim_info("a3 line parse hmt reference info\n");
-				parsephase = PHASE_HMT_REFRENCE_SHIFT;
-			} else if (strncmp(tempbuf, PHASE_HMT_COLOR_STRING, strlen(PHASE_HMT_COLOR_STRING)) == 0) {
-				dsim_info("a3 line parse hmt color info\n");
-				parsephase = PHASE_HMT_COLOR_SHIFT;
-			}
-#endif
 			else {
 				parse_fn[parsephase](panel, tempbuf);
 			}
@@ -1589,69 +1402,6 @@ static int octa_a3_read_dim_data(struct panel_private *panel)
 
 		dsim_info("%s\n", debugbuf);
 	}
-#endif
-
-#ifdef CONFIG_LCD_HMT
-#ifdef A3_LINE_DEBUG
-	dsim_info("------------ hmt ref br ------------ \n");
-	for (i = 0; i < HMT_MAX_BR_INFO; i++) {
-		dsim_info("real br : %d, ref br : %d\n", hmt_diminfo[i].br, hmt_diminfo[i].refBr);
-	}
-
-	dsim_info("------------ hmt aid ------------ \n");
-	for (i = 0; i < HMT_MAX_BR_INFO; i++) {
-		dsim_info("index : %d, aid[0]:%x, aid[1]:%x, aid[2]:%x, aid[3]:%x\n",
-			i, hmt_diminfo[i].aid[0], hmt_diminfo[i].aid[1], hmt_diminfo[i].aid[2], hmt_diminfo[i].aid[3]);
-	}
-
-	dsim_info("------------ hmt reference shift ------------ \n");
-
-	for (i = 0; i < HMT_MAX_BR_INFO; i++) {
-		debugbufcnt = 0;
-		memset(debugbuf, 0, 512);
-		for (j = 0 ; j < REF_SHIFT_CNT; j++) {
-			debugbufcnt += sprintf(debugbuf+debugbufcnt, "%d ", hmt_diminfo[i].rTbl[j]);
-		}
-		dsim_info("%s\n", debugbuf);
-	}
-
-	dsim_info("------------ htm color shift ------------ \n");
-
-	for (i = 0; i < HMT_MAX_BR_INFO; i++) {
-		debugbufcnt = 0;
-		memset(debugbuf, 0, 512);
-		for (j = 0 ; j < COLOR_SHIFT_CNT; j++) {
-			debugbufcnt += sprintf(debugbuf+debugbufcnt, "%d ", hmt_diminfo[i].cTbl[j]);
-		}
-		dsim_info("%s\n", debugbuf);
-	}
-#endif
-
-	hmt_dimming = (struct dim_data *)panel->hmt_dim_data;
-	if (!hmt_dimming) {
-		dsim_err("%s : failed to get dimming data\n", __func__);
-		goto exit_kfree;
-	}
-
-	for (i = 0; i < HMT_MAX_BR_INFO; i++) {
-		ret = cal_gamma_from_index(hmt_dimming, &hmt_diminfo[i]);
-		if (ret) {
-			dsim_err("%s : failed to calculate gamma : index : %d\n", __func__, i);
-			goto exit_kfree;
-		}
-
-	}
-#ifdef A3_LINE_DEBUG
-	for (i = 0; i < HMT_MAX_BR_INFO; i++) {
-		memset(debugbuf, 0, sizeof(debugbuf));
-		debugbufcnt = sprintf(debugbuf, "gamma[%3d] : ",hmt_diminfo[i].br);
-
-		for(j = 0; j < GAMMA_CMD_CNT; j++)
-			debugbufcnt += sprintf(debugbuf + debugbufcnt, "%02x ", hmt_diminfo[i].gamma[j]);
-
-		dsim_info("%s\n", debugbuf);
-	}
-#endif
 #endif
 
 exit_kfree:
@@ -1939,77 +1689,77 @@ static const unsigned int hmt_br_tbl[256] = {
 };
 
 struct SmtDimInfo hmt_dimming_info_HA3[HMT_MAX_BR_INFO] = {
-	{.br = 10, .refBr = 40, .cGma = gma2p15, .rTbl = HA3_HMTrtbl10nit, .cTbl = HA3_HMTctbl10nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 11, .refBr = 43, .cGma = gma2p15, .rTbl = HA3_HMTrtbl11nit, .cTbl = HA3_HMTctbl11nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 12, .refBr = 47, .cGma = gma2p15, .rTbl = HA3_HMTrtbl12nit, .cTbl = HA3_HMTctbl12nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 13, .refBr = 52, .cGma = gma2p15, .rTbl = HA3_HMTrtbl13nit, .cTbl = HA3_HMTctbl13nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 14, .refBr = 55, .cGma = gma2p15, .rTbl = HA3_HMTrtbl14nit, .cTbl = HA3_HMTctbl14nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 15, .refBr = 59, .cGma = gma2p15, .rTbl = HA3_HMTrtbl15nit, .cTbl = HA3_HMTctbl15nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 16, .refBr = 62, .cGma = gma2p15, .rTbl = HA3_HMTrtbl16nit, .cTbl = HA3_HMTctbl16nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 17, .refBr = 64, .cGma = gma2p15, .rTbl = HA3_HMTrtbl17nit, .cTbl = HA3_HMTctbl17nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 19, .refBr = 72, .cGma = gma2p15, .rTbl = HA3_HMTrtbl19nit, .cTbl = HA3_HMTctbl19nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 20, .refBr = 75, .cGma = gma2p15, .rTbl = HA3_HMTrtbl20nit, .cTbl = HA3_HMTctbl20nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 21, .refBr = 79, .cGma = gma2p15, .rTbl = HA3_HMTrtbl21nit, .cTbl = HA3_HMTctbl21nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 22, .refBr = 82, .cGma = gma2p15, .rTbl = HA3_HMTrtbl22nit, .cTbl = HA3_HMTctbl22nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 23, .refBr = 84, .cGma = gma2p15, .rTbl = HA3_HMTrtbl23nit, .cTbl = HA3_HMTctbl23nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 25, .refBr = 92, .cGma = gma2p15, .rTbl = HA3_HMTrtbl25nit, .cTbl = HA3_HMTctbl25nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 27, .refBr = 96, .cGma = gma2p15, .rTbl = HA3_HMTrtbl27nit, .cTbl = HA3_HMTctbl27nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 29, .refBr = 102, .cGma = gma2p15, .rTbl = HA3_HMTrtbl29nit, .cTbl = HA3_HMTctbl29nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 31, .refBr = 108, .cGma = gma2p15, .rTbl = HA3_HMTrtbl31nit, .cTbl = HA3_HMTctbl31nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 33, .refBr = 113, .cGma = gma2p15, .rTbl = HA3_HMTrtbl33nit, .cTbl = HA3_HMTctbl33nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 35, .refBr = 122, .cGma = gma2p15, .rTbl = HA3_HMTrtbl35nit, .cTbl = HA3_HMTctbl35nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 37, .refBr = 130, .cGma = gma2p15, .rTbl = HA3_HMTrtbl37nit, .cTbl = HA3_HMTctbl37nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 39, .refBr = 136, .cGma = gma2p15, .rTbl = HA3_HMTrtbl39nit, .cTbl = HA3_HMTctbl39nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 41, .refBr = 140, .cGma = gma2p15, .rTbl = HA3_HMTrtbl41nit, .cTbl = HA3_HMTctbl41nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 44, .refBr = 151, .cGma = gma2p15, .rTbl = HA3_HMTrtbl44nit, .cTbl = HA3_HMTctbl44nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 47, .refBr = 160, .cGma = gma2p15, .rTbl = HA3_HMTrtbl47nit, .cTbl = HA3_HMTctbl47nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 50, .refBr = 168, .cGma = gma2p15, .rTbl = HA3_HMTrtbl50nit, .cTbl = HA3_HMTctbl50nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 53, .refBr = 179, .cGma = gma2p15, .rTbl = HA3_HMTrtbl53nit, .cTbl = HA3_HMTctbl53nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 56, .refBr = 190, .cGma = gma2p15, .rTbl = HA3_HMTrtbl56nit, .cTbl = HA3_HMTctbl56nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 60, .refBr = 200, .cGma = gma2p15, .rTbl = HA3_HMTrtbl60nit, .cTbl = HA3_HMTctbl60nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 64, .refBr = 213, .cGma = gma2p15, .rTbl = HA3_HMTrtbl64nit, .cTbl = HA3_HMTctbl64nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 68, .refBr = 225, .cGma = gma2p15, .rTbl = HA3_HMTrtbl68nit, .cTbl = HA3_HMTctbl68nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 72, .refBr = 237, .cGma = gma2p15, .rTbl = HA3_HMTrtbl72nit, .cTbl = HA3_HMTctbl72nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 77, .refBr = 182, .cGma = gma2p15, .rTbl = HA3_HMTrtbl77nit, .cTbl = HA3_HMTctbl77nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 82, .refBr = 192, .cGma = gma2p15, .rTbl = HA3_HMTrtbl82nit, .cTbl = HA3_HMTctbl82nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 87, .refBr = 202, .cGma = gma2p15, .rTbl = HA3_HMTrtbl87nit, .cTbl = HA3_HMTctbl87nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 93, .refBr = 213, .cGma = gma2p15, .rTbl = HA3_HMTrtbl93nit, .cTbl = HA3_HMTctbl93nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 99, .refBr = 227, .cGma = gma2p15, .rTbl = HA3_HMTrtbl99nit, .cTbl = HA3_HMTctbl99nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
-	{.br = 105, .refBr = 242, .cGma = gma2p15, .rTbl = HA3_HMTrtbl105nit, .cTbl = HA3_HMTctbl105nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 10, .refBr = 44, .cGma = gma2p15, .rTbl = HA3_HMTrtbl10nit, .cTbl = HA3_HMTctbl10nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 11, .refBr = 48, .cGma = gma2p15, .rTbl = HA3_HMTrtbl11nit, .cTbl = HA3_HMTctbl11nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 12, .refBr = 57, .cGma = gma2p15, .rTbl = HA3_HMTrtbl12nit, .cTbl = HA3_HMTctbl12nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 13, .refBr = 61, .cGma = gma2p15, .rTbl = HA3_HMTrtbl13nit, .cTbl = HA3_HMTctbl13nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 14, .refBr = 65, .cGma = gma2p15, .rTbl = HA3_HMTrtbl14nit, .cTbl = HA3_HMTctbl14nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 15, .refBr = 69, .cGma = gma2p15, .rTbl = HA3_HMTrtbl15nit, .cTbl = HA3_HMTctbl15nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 16, .refBr = 73, .cGma = gma2p15, .rTbl = HA3_HMTrtbl16nit, .cTbl = HA3_HMTctbl16nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 17, .refBr = 75, .cGma = gma2p15, .rTbl = HA3_HMTrtbl17nit, .cTbl = HA3_HMTctbl17nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 19, .refBr = 84, .cGma = gma2p15, .rTbl = HA3_HMTrtbl19nit, .cTbl = HA3_HMTctbl19nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 20, .refBr = 87, .cGma = gma2p15, .rTbl = HA3_HMTrtbl20nit, .cTbl = HA3_HMTctbl20nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 21, .refBr = 89, .cGma = gma2p15, .rTbl = HA3_HMTrtbl21nit, .cTbl = HA3_HMTctbl21nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 22, .refBr = 96, .cGma = gma2p15, .rTbl = HA3_HMTrtbl22nit, .cTbl = HA3_HMTctbl22nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 23, .refBr = 101, .cGma = gma2p15, .rTbl = HA3_HMTrtbl23nit, .cTbl = HA3_HMTctbl23nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 25, .refBr = 107, .cGma = gma2p15, .rTbl = HA3_HMTrtbl25nit, .cTbl = HA3_HMTctbl25nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 27, .refBr = 114, .cGma = gma2p15, .rTbl = HA3_HMTrtbl27nit, .cTbl = HA3_HMTctbl27nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 29, .refBr = 121, .cGma = gma2p15, .rTbl = HA3_HMTrtbl29nit, .cTbl = HA3_HMTctbl29nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 31, .refBr = 128, .cGma = gma2p15, .rTbl = HA3_HMTrtbl31nit, .cTbl = HA3_HMTctbl31nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 33, .refBr = 136, .cGma = gma2p15, .rTbl = HA3_HMTrtbl33nit, .cTbl = HA3_HMTctbl33nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 35, .refBr = 142, .cGma = gma2p15, .rTbl = HA3_HMTrtbl35nit, .cTbl = HA3_HMTctbl35nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 37, .refBr = 150, .cGma = gma2p15, .rTbl = HA3_HMTrtbl37nit, .cTbl = HA3_HMTctbl37nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 39, .refBr = 156, .cGma = gma2p15, .rTbl = HA3_HMTrtbl39nit, .cTbl = HA3_HMTctbl39nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 41, .refBr = 165, .cGma = gma2p15, .rTbl = HA3_HMTrtbl41nit, .cTbl = HA3_HMTctbl41nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 44, .refBr = 179, .cGma = gma2p15, .rTbl = HA3_HMTrtbl44nit, .cTbl = HA3_HMTctbl44nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 47, .refBr = 188, .cGma = gma2p15, .rTbl = HA3_HMTrtbl47nit, .cTbl = HA3_HMTctbl47nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 50, .refBr = 199, .cGma = gma2p15, .rTbl = HA3_HMTrtbl50nit, .cTbl = HA3_HMTctbl50nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 53, .refBr = 211, .cGma = gma2p15, .rTbl = HA3_HMTrtbl53nit, .cTbl = HA3_HMTctbl53nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 56, .refBr = 220, .cGma = gma2p15, .rTbl = HA3_HMTrtbl56nit, .cTbl = HA3_HMTctbl56nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 60, .refBr = 233, .cGma = gma2p15, .rTbl = HA3_HMTrtbl60nit, .cTbl = HA3_HMTctbl60nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 64, .refBr = 246, .cGma = gma2p15, .rTbl = HA3_HMTrtbl64nit, .cTbl = HA3_HMTctbl64nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 68, .refBr = 260, .cGma = gma2p15, .rTbl = HA3_HMTrtbl68nit, .cTbl = HA3_HMTctbl68nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 72, .refBr = 274, .cGma = gma2p15, .rTbl = HA3_HMTrtbl72nit, .cTbl = HA3_HMTctbl72nit, .aid = HA3_HMTaid8004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 77, .refBr = 211, .cGma = gma2p15, .rTbl = HA3_HMTrtbl77nit, .cTbl = HA3_HMTctbl77nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 82, .refBr = 222, .cGma = gma2p15, .rTbl = HA3_HMTrtbl82nit, .cTbl = HA3_HMTctbl82nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 87, .refBr = 235, .cGma = gma2p15, .rTbl = HA3_HMTrtbl87nit, .cTbl = HA3_HMTctbl87nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 93, .refBr = 248, .cGma = gma2p15, .rTbl = HA3_HMTrtbl93nit, .cTbl = HA3_HMTctbl93nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 99, .refBr = 263, .cGma = gma2p15, .rTbl = HA3_HMTrtbl99nit, .cTbl = HA3_HMTctbl99nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
+	{.br = 105, .refBr = 274, .cGma = gma2p15, .rTbl = HA3_HMTrtbl105nit, .cTbl = HA3_HMTctbl105nit, .aid = HA3_HMTaid7004, .elvCaps = HA3_HMTelvCaps, .elv = HA3_HMTelv},
 };
 
 struct SmtDimInfo hmt_dimming_info_HF3[HMT_MAX_BR_INFO] = {
-	{.br = 10, .refBr = 39, .cGma = gma2p15, .rTbl = HF3_HMTrtbl10nit, .cTbl = HF3_HMTctbl10nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 11, .refBr = 44, .cGma = gma2p15, .rTbl = HF3_HMTrtbl11nit, .cTbl = HF3_HMTctbl11nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 12, .refBr = 48, .cGma = gma2p15, .rTbl = HF3_HMTrtbl12nit, .cTbl = HF3_HMTctbl12nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 13, .refBr = 52, .cGma = gma2p15, .rTbl = HF3_HMTrtbl13nit, .cTbl = HF3_HMTctbl13nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 14, .refBr = 56, .cGma = gma2p15, .rTbl = HF3_HMTrtbl14nit, .cTbl = HF3_HMTctbl14nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 15, .refBr = 60, .cGma = gma2p15, .rTbl = HF3_HMTrtbl15nit, .cTbl = HF3_HMTctbl15nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 16, .refBr = 63, .cGma = gma2p15, .rTbl = HF3_HMTrtbl16nit, .cTbl = HF3_HMTctbl16nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 17, .refBr = 66, .cGma = gma2p15, .rTbl = HF3_HMTrtbl17nit, .cTbl = HF3_HMTctbl17nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 19, .refBr = 74, .cGma = gma2p15, .rTbl = HF3_HMTrtbl19nit, .cTbl = HF3_HMTctbl19nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 20, .refBr = 77, .cGma = gma2p15, .rTbl = HF3_HMTrtbl20nit, .cTbl = HF3_HMTctbl20nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 21, .refBr = 82, .cGma = gma2p15, .rTbl = HF3_HMTrtbl21nit, .cTbl = HF3_HMTctbl21nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 22, .refBr = 85, .cGma = gma2p15, .rTbl = HF3_HMTrtbl22nit, .cTbl = HF3_HMTctbl22nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 23, .refBr = 87, .cGma = gma2p15, .rTbl = HF3_HMTrtbl23nit, .cTbl = HF3_HMTctbl23nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 25, .refBr = 95, .cGma = gma2p15, .rTbl = HF3_HMTrtbl25nit, .cTbl = HF3_HMTctbl25nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 27, .refBr = 102, .cGma = gma2p15, .rTbl = HF3_HMTrtbl27nit, .cTbl = HF3_HMTctbl27nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 29, .refBr = 107, .cGma = gma2p15, .rTbl = HF3_HMTrtbl29nit, .cTbl = HF3_HMTctbl29nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 31, .refBr = 114, .cGma = gma2p15, .rTbl = HF3_HMTrtbl31nit, .cTbl = HF3_HMTctbl31nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 33, .refBr = 120, .cGma = gma2p15, .rTbl = HF3_HMTrtbl33nit, .cTbl = HF3_HMTctbl33nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 35, .refBr = 126, .cGma = gma2p15, .rTbl = HF3_HMTrtbl35nit, .cTbl = HF3_HMTctbl35nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 37, .refBr = 131, .cGma = gma2p15, .rTbl = HF3_HMTrtbl37nit, .cTbl = HF3_HMTctbl37nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 39, .refBr = 138, .cGma = gma2p15, .rTbl = HF3_HMTrtbl39nit, .cTbl = HF3_HMTctbl39nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 41, .refBr = 147, .cGma = gma2p15, .rTbl = HF3_HMTrtbl41nit, .cTbl = HF3_HMTctbl41nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 44, .refBr = 157, .cGma = gma2p15, .rTbl = HF3_HMTrtbl44nit, .cTbl = HF3_HMTctbl44nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 47, .refBr = 165, .cGma = gma2p15, .rTbl = HF3_HMTrtbl47nit, .cTbl = HF3_HMTctbl47nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 50, .refBr = 175, .cGma = gma2p15, .rTbl = HF3_HMTrtbl50nit, .cTbl = HF3_HMTctbl50nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 53, .refBr = 184, .cGma = gma2p15, .rTbl = HF3_HMTrtbl53nit, .cTbl = HF3_HMTctbl53nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 56, .refBr = 192, .cGma = gma2p15, .rTbl = HF3_HMTrtbl56nit, .cTbl = HF3_HMTctbl56nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 60, .refBr = 204, .cGma = gma2p15, .rTbl = HF3_HMTrtbl60nit, .cTbl = HF3_HMTctbl60nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 64, .refBr = 218, .cGma = gma2p15, .rTbl = HF3_HMTrtbl64nit, .cTbl = HF3_HMTctbl64nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 68, .refBr = 230, .cGma = gma2p15, .rTbl = HF3_HMTrtbl68nit, .cTbl = HF3_HMTctbl68nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
-	{.br = 72, .refBr = 241, .cGma = gma2p15, .rTbl = HF3_HMTrtbl72nit, .cTbl = HF3_HMTctbl72nit, .aid = HF3_HMTaid8004, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 10, .refBr = 39, .cGma = gma2p15, .rTbl = HF3_HMTrtbl10nit, .cTbl = HF3_HMTctbl10nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 11, .refBr = 44, .cGma = gma2p15, .rTbl = HF3_HMTrtbl11nit, .cTbl = HF3_HMTctbl11nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 12, .refBr = 48, .cGma = gma2p15, .rTbl = HF3_HMTrtbl12nit, .cTbl = HF3_HMTctbl12nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 13, .refBr = 52, .cGma = gma2p15, .rTbl = HF3_HMTrtbl13nit, .cTbl = HF3_HMTctbl13nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 14, .refBr = 56, .cGma = gma2p15, .rTbl = HF3_HMTrtbl14nit, .cTbl = HF3_HMTctbl14nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 15, .refBr = 60, .cGma = gma2p15, .rTbl = HF3_HMTrtbl15nit, .cTbl = HF3_HMTctbl15nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 16, .refBr = 63, .cGma = gma2p15, .rTbl = HF3_HMTrtbl16nit, .cTbl = HF3_HMTctbl16nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 17, .refBr = 66, .cGma = gma2p15, .rTbl = HF3_HMTrtbl17nit, .cTbl = HF3_HMTctbl17nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 19, .refBr = 74, .cGma = gma2p15, .rTbl = HF3_HMTrtbl19nit, .cTbl = HF3_HMTctbl19nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 20, .refBr = 77, .cGma = gma2p15, .rTbl = HF3_HMTrtbl20nit, .cTbl = HF3_HMTctbl20nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 21, .refBr = 82, .cGma = gma2p15, .rTbl = HF3_HMTrtbl21nit, .cTbl = HF3_HMTctbl21nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 22, .refBr = 85, .cGma = gma2p15, .rTbl = HF3_HMTrtbl22nit, .cTbl = HF3_HMTctbl22nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 23, .refBr = 87, .cGma = gma2p15, .rTbl = HF3_HMTrtbl23nit, .cTbl = HF3_HMTctbl23nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 25, .refBr = 95, .cGma = gma2p15, .rTbl = HF3_HMTrtbl25nit, .cTbl = HF3_HMTctbl25nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 27, .refBr = 102, .cGma = gma2p15, .rTbl = HF3_HMTrtbl27nit, .cTbl = HF3_HMTctbl27nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 29, .refBr = 107, .cGma = gma2p15, .rTbl = HF3_HMTrtbl29nit, .cTbl = HF3_HMTctbl29nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 31, .refBr = 114, .cGma = gma2p15, .rTbl = HF3_HMTrtbl31nit, .cTbl = HF3_HMTctbl31nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 33, .refBr = 120, .cGma = gma2p15, .rTbl = HF3_HMTrtbl33nit, .cTbl = HF3_HMTctbl33nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 35, .refBr = 126, .cGma = gma2p15, .rTbl = HF3_HMTrtbl35nit, .cTbl = HF3_HMTctbl35nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 37, .refBr = 131, .cGma = gma2p15, .rTbl = HF3_HMTrtbl37nit, .cTbl = HF3_HMTctbl37nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 39, .refBr = 138, .cGma = gma2p15, .rTbl = HF3_HMTrtbl39nit, .cTbl = HF3_HMTctbl39nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 41, .refBr = 147, .cGma = gma2p15, .rTbl = HF3_HMTrtbl41nit, .cTbl = HF3_HMTctbl41nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 44, .refBr = 157, .cGma = gma2p15, .rTbl = HF3_HMTrtbl44nit, .cTbl = HF3_HMTctbl44nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 47, .refBr = 165, .cGma = gma2p15, .rTbl = HF3_HMTrtbl47nit, .cTbl = HF3_HMTctbl47nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 50, .refBr = 175, .cGma = gma2p15, .rTbl = HF3_HMTrtbl50nit, .cTbl = HF3_HMTctbl50nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 53, .refBr = 184, .cGma = gma2p15, .rTbl = HF3_HMTrtbl53nit, .cTbl = HF3_HMTctbl53nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 56, .refBr = 192, .cGma = gma2p15, .rTbl = HF3_HMTrtbl56nit, .cTbl = HF3_HMTctbl56nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 60, .refBr = 204, .cGma = gma2p15, .rTbl = HF3_HMTrtbl60nit, .cTbl = HF3_HMTctbl60nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 64, .refBr = 218, .cGma = gma2p15, .rTbl = HF3_HMTrtbl64nit, .cTbl = HF3_HMTctbl64nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 68, .refBr = 230, .cGma = gma2p15, .rTbl = HF3_HMTrtbl68nit, .cTbl = HF3_HMTctbl68nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 72, .refBr = 241, .cGma = gma2p15, .rTbl = HF3_HMTrtbl72nit, .cTbl = HF3_HMTctbl72nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
 	{.br = 77, .refBr = 186, .cGma = gma2p15, .rTbl = HF3_HMTrtbl77nit, .cTbl = HF3_HMTctbl77nit, .aid = HF3_HMTaid6999, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
 	{.br = 82, .refBr = 199, .cGma = gma2p15, .rTbl = HF3_HMTrtbl82nit, .cTbl = HF3_HMTctbl82nit, .aid = HF3_HMTaid6999, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
 	{.br = 87, .refBr = 209, .cGma = gma2p15, .rTbl = HF3_HMTrtbl87nit, .cTbl = HF3_HMTctbl87nit, .aid = HF3_HMTaid6999, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
@@ -2018,16 +1768,56 @@ struct SmtDimInfo hmt_dimming_info_HF3[HMT_MAX_BR_INFO] = {
 	{.br = 105, .refBr = 247, .cGma = gma2p15, .rTbl = HF3_HMTrtbl105nit, .cTbl = HF3_HMTctbl105nit, .aid = HF3_HMTaid6999, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
 };
 
+struct SmtDimInfo hmt_dimming_info_HF3_A3_REV1[HMT_MAX_BR_INFO] = {
+	{.br = 10, .refBr = 40, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl10nit, .cTbl = HF3_A3_HMTctbl10nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 11, .refBr = 44, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl11nit, .cTbl = HF3_A3_HMTctbl11nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 12, .refBr = 47, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl12nit, .cTbl = HF3_A3_HMTctbl12nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 13, .refBr = 52, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl13nit, .cTbl = HF3_A3_HMTctbl13nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 14, .refBr = 56, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl14nit, .cTbl = HF3_A3_HMTctbl14nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 15, .refBr = 60, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl15nit, .cTbl = HF3_A3_HMTctbl15nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 16, .refBr = 63, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl16nit, .cTbl = HF3_A3_HMTctbl16nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 17, .refBr = 67, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl17nit, .cTbl = HF3_A3_HMTctbl17nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 19, .refBr = 76, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl19nit, .cTbl = HF3_A3_HMTctbl19nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 20, .refBr = 79, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl20nit, .cTbl = HF3_A3_HMTctbl20nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 21, .refBr = 83, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl21nit, .cTbl = HF3_A3_HMTctbl21nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 22, .refBr = 88, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl22nit, .cTbl = HF3_A3_HMTctbl22nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 23, .refBr = 91, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl23nit, .cTbl = HF3_A3_HMTctbl23nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 25, .refBr = 97, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl25nit, .cTbl = HF3_A3_HMTctbl25nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 27, .refBr = 103, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl27nit, .cTbl = HF3_A3_HMTctbl27nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 29, .refBr = 113, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl29nit, .cTbl = HF3_A3_HMTctbl29nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 31, .refBr = 117, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl31nit, .cTbl = HF3_A3_HMTctbl31nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 33, .refBr = 123, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl33nit, .cTbl = HF3_A3_HMTctbl33nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 35, .refBr = 130, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl35nit, .cTbl = HF3_A3_HMTctbl35nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 37, .refBr = 137, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl37nit, .cTbl = HF3_A3_HMTctbl37nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 39, .refBr = 144, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl39nit, .cTbl = HF3_A3_HMTctbl39nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 41, .refBr = 152, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl41nit, .cTbl = HF3_A3_HMTctbl41nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 44, .refBr = 164, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl44nit, .cTbl = HF3_A3_HMTctbl44nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 47, .refBr = 174, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl47nit, .cTbl = HF3_A3_HMTctbl47nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 50, .refBr = 183, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl50nit, .cTbl = HF3_A3_HMTctbl50nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 53, .refBr = 195, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl53nit, .cTbl = HF3_A3_HMTctbl53nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 56, .refBr = 205, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl56nit, .cTbl = HF3_A3_HMTctbl56nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 60, .refBr = 218, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl60nit, .cTbl = HF3_A3_HMTctbl60nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 64, .refBr = 229, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl64nit, .cTbl = HF3_A3_HMTctbl64nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 68, .refBr = 243, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl68nit, .cTbl = HF3_A3_HMTctbl68nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 72, .refBr = 256, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl72nit, .cTbl = HF3_A3_HMTctbl72nit, .aid = HF3_HMTaid8001, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 77, .refBr = 197, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl77nit, .cTbl = HF3_A3_HMTctbl77nit, .aid = HF3_HMTaid6999, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 82, .refBr = 207, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl82nit, .cTbl = HF3_A3_HMTctbl82nit, .aid = HF3_HMTaid6999, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 87, .refBr = 222, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl87nit, .cTbl = HF3_A3_HMTctbl87nit, .aid = HF3_HMTaid6999, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 93, .refBr = 236, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl93nit, .cTbl = HF3_A3_HMTctbl93nit, .aid = HF3_HMTaid6999, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 99, .refBr = 249, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl99nit, .cTbl = HF3_A3_HMTctbl99nit, .aid = HF3_HMTaid6999, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+	{.br = 105, .refBr = 262, .cGma = gma2p15, .rTbl = HF3_A3_HMTrtbl105nit, .cTbl = HF3_A3_HMTctbl105nit, .aid = HF3_HMTaid6999, .elvCaps = HF3_HMTelvCaps, .elv = HF3_HMTelv},
+};
 
 static int hmt_init_dimming(struct dsim_device *dsim, u8 * mtp)
 {
-        int     i, j;
-        int     pos = 0;
-        int     ret = 0;
-        short   temp;
-        static struct dim_data *dimming = NULL;
-        struct panel_private *panel = &dsim->priv;
-        struct SmtDimInfo *diminfo = NULL;
+	int     i, j;
+	int     pos = 0;
+	int     ret = 0;
+	short   temp;
+	static struct dim_data *dimming = NULL;
+	struct panel_private *panel = &dsim->priv;
+	struct SmtDimInfo *diminfo = NULL;
+	unsigned char panel_line = panel->id[0] & 0xF0;
 
 	if( dimming == NULL ) {
 		dimming = (struct dim_data *) kmalloc(sizeof(struct dim_data), GFP_KERNEL);
@@ -2037,64 +1827,69 @@ static int hmt_init_dimming(struct dsim_device *dsim, u8 * mtp)
 			goto error;
 		}
 	}
-
-        switch (dynamic_lcd_type) {
-                case LCD_TYPE_S6E3HA2_WQHD:
-                case LCD_TYPE_S6E3HA3_WQHD:
-                        dsim_info("%s init HMT dimming info for HA3 panel\n", __func__);
-                        diminfo = (void *) hmt_dimming_info_HA3;
-                        break;
-                case LCD_TYPE_S6E3HF3_WQHD:
-                        dsim_info("%s init HMT dimming info for HF3 panel\n", __func__);
-                        diminfo = (void *) hmt_dimming_info_HF3;
-                        break;
-                default:
-                        dsim_info("%s init HMT dimming info for (UNKNOWN) HA3 panel\n", __func__);
-                        diminfo = (void *) hmt_dimming_info_HA3;
-                        break;
-        }
-
-        panel->hmt_dim_data = (void *) dimming;
-        panel->hmt_dim_info = (void *) diminfo;
-
-        panel->hmt_br_tbl = (unsigned int *) hmt_br_tbl;
-
-        for (j = 0; j < CI_MAX; j++) {
-                temp = ((mtp[pos] & 0x01) ? -1 : 1) * mtp[pos + 1];
-                dimming->t_gamma[V255][j] = (int) center_gamma[V255][j] + temp;
-                dimming->mtp[V255][j] = temp;
-                pos += 2;
-        }
-
-        for (i = V203; i >= V0; i--) {
-                for (j = 0; j < CI_MAX; j++) {
-                        temp = ((mtp[pos] & 0x80) ? -1 : 1) * (mtp[pos] & 0x7f);
-                        dimming->t_gamma[i][j] = (int) center_gamma[i][j] + temp;
-                        dimming->mtp[i][j] = temp;
-                        pos++;
-                }
-        }
+	switch (dynamic_lcd_type) {
+	case LCD_TYPE_S6E3HA3_WQHD:
+		dsim_info("%s init HMT dimming info for HA3 panel\n", __func__);
+		diminfo = (void *) hmt_dimming_info_HA3;
+		break;
+	case LCD_TYPE_S6E3HF3_WQHD:
+		switch(panel_line) {
+				// code
+		case S6E3HF3_A2_INIT_ID:
+		case S6E3HF3_A2_REV01_ID:
+			dsim_info("%s init HMT dimming info for HF3 A2 init panel\n", __func__);
+			diminfo = (void *) hmt_dimming_info_HF3;
+			break;
+		case S6E3HF3_A3_REV01_ID:
+			dsim_info("%s init HMT dimming info for HF3 A3 rev1 init panel\n", __func__);
+			diminfo = (void *) hmt_dimming_info_HF3_A3_REV1;
+			break;
+		default:
+			dsim_info("%s init HMT dimming info for (UNKNOWN) HF3 panel\n", __func__);
+			diminfo = (void *) hmt_dimming_info_HF3;
+			break;
+		}
+		break;
+	default:
+		dsim_info("%s init HMT dimming info for (UNKNOWN) HA3 panel\n", __func__);
+		diminfo = (void *) hmt_dimming_info_HA3;
+		break;
+	}
+	panel->hmt_dim_data = (void *) dimming;
+	panel->hmt_dim_info = (void *) diminfo;
+	panel->hmt_br_tbl = (unsigned int *) hmt_br_tbl;
+	for (j = 0; j < CI_MAX; j++) {
+		temp = ((mtp[pos] & 0x01) ? -1 : 1) * mtp[pos + 1];
+		dimming->t_gamma[V255][j] = (int) center_gamma[V255][j] + temp;
+		dimming->mtp[V255][j] = temp;
+		pos += 2;
+	}
+	for (i = V203; i >= V0; i--) {
+		for (j = 0; j < CI_MAX; j++) {
+			temp = ((mtp[pos] & 0x80) ? -1 : 1) * (mtp[pos] & 0x7f);
+			dimming->t_gamma[i][j] = (int) center_gamma[i][j] + temp;
+			dimming->mtp[i][j] = temp;
+			pos++;
+			}
+	}
         /* for vt */
-        temp = (mtp[pos + 1]) << 8 | mtp[pos];
-
-        for (i = 0; i < CI_MAX; i++)
-                dimming->vt_mtp[i] = (temp >> (i * 4)) & 0x0f;
-
-        ret = generate_volt_table(dimming);
-        if (ret) {
-                dimm_err("[ERR:%s] failed to generate volt table\n", __func__);
-                goto error;
-        }
-
-        for (i = 0; i < HMT_MAX_BR_INFO; i++) {
-                ret = cal_gamma_from_index(dimming, &diminfo[i]);
-                if (ret) {
-                        dsim_err("failed to calculate gamma : index : %d\n", i);
-                        goto error;
-                }
-        }
-      error:
-        return ret;
+	temp = (mtp[pos + 1]) << 8 | mtp[pos];
+	for (i = 0; i < CI_MAX; i++)
+		dimming->vt_mtp[i] = (temp >> (i * 4)) & 0x0f;
+	ret = generate_volt_table(dimming);
+	if (ret) {
+		dimm_err("[ERR:%s] failed to generate volt table\n", __func__);
+		goto error;
+	}
+	for (i = 0; i < HMT_MAX_BR_INFO; i++) {
+		ret = cal_gamma_from_index(dimming, &diminfo[i]);
+		if (ret) {
+			dsim_err("failed to calculate gamma : index : %d\n", i);
+			goto error;
+		}
+	}
+error:
+	return ret;
 
 }
 
@@ -3000,6 +2795,9 @@ static int s6e3ha3_wqhd_init(struct dsim_device *dsim)
 		}
 		dsim_info("%s max77838 system rev : %d\n", __func__, hw_rev);
 	}
+#ifdef CONFIG_LCD_HMT
+		if(dsim->priv.hmt_on != HMT_ON)
+#endif
 	msleep(120);
 
 #ifdef CONFIG_ALWAYS_RELOAD_MTP_FACTORY_BUILD
@@ -3560,7 +3358,9 @@ static int s6e3hf3_wqhd_init(struct dsim_device *dsim)
 		dsim_err("%s : fail to write CMD : S6E3HF3_SEQ_MIC\n", __func__);
 		goto init_exit;
 	}
-
+#ifdef CONFIG_LCD_HMT
+		if(dsim->priv.hmt_on != HMT_ON)
+#endif
 	msleep(120);
 
 #ifdef CONFIG_ALWAYS_RELOAD_MTP_FACTORY_BUILD

@@ -61,8 +61,10 @@ static struct fimc_is_sensor_cfg config_2p2[] = {
 	//FIMC_IS_SENSOR_CFG(824, 496, 300, 13, 8),
 	/* 5328x3000@30fps */
 	//FIMC_IS_SENSOR_CFG(5328, 3000, 30, 28, 9),
+#if !defined(DISABLE_2P2P_SENSOR_MODE_10) // 2p2+ greenish issue
 	/* 2664X1500@30fps */
 	FIMC_IS_SENSOR_CFG(2664, 1500, 30, 15, 10),
+#endif
 };
 
 static struct fimc_is_vci vci_2p2[] = {

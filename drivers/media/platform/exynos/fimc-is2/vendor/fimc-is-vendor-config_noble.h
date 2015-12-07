@@ -24,4 +24,6 @@
 #define CONFIG_SUPPORT_GROUP_MIGRATION_FOR_TDNR
 #define CONFIG_ENABLE_TDNR
 
+/* 2p2+ greenish issue : not use sensor mode 10 on the NOBLE series and ROYCE */
+#define DISABLE_2P2P_SENSOR_MODE_10
 #endif /* FIMC_IS_VENDOR_CONFIG_NOBLE_H */
