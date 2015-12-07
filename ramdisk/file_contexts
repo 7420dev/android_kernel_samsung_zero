@@ -1239,21 +1239,3 @@
 
 /system/bin/tsdaemon            u:object_r:tsdaemon_exec:s0
 
-#line 1 "vendor/samsung/common/sepolicy/carrier/carrier_kor/file_contexts"
-/system/bin/dmbserver   u:object_r:dmb_exec:s0
-/dev/tdmb               u:object_r:tdmb_device:s0
-/data/playready(/.*)?   u:object_r:playready_file:s0
-
-
-############ LGT #############
-/data/LGTContents(/.*)?  u:object_r:lgt_contents_file:s0
-/system/bin/diag_knight	u:object_r:ss_diagknight_daemon_exec:s0
-/system/bin/mwlan_helper u:object_r:mwlan_helper_exec:s0
-/dev/mwlan_aarp u:object_r:mwlan_aarp_device:s0
-/dev/ipsecdrvtl u:object_r:mwlan_ipsecdrvtl_device:s0
-
-############ SKT #############
-/system/bin/iwland      u:object_r:iwland_exec:s0
-/dev/iwland(/.*)?       u:object_r:skt_socket:s0
-/system/bin/tbased      u:object_r:tbased_exec:s0
-
