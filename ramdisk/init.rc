@@ -507,7 +507,7 @@ on boot
     # level system server to be able to adjust the kernel OOM driver
     # parameters to match how it is managing things.
     write /proc/sys/vm/overcommit_memory 1
-    write /proc/sys/vm/min_free_kbytes 65536
+    write /proc/sys/vm/min_free_kbytes 32768
     write /proc/sys/vm/user_reserve_kbytes 131072
     chown root system /sys/module/lowmemorykiller/parameters/adj
     chmod 0220 /sys/module/lowmemorykiller/parameters/adj
