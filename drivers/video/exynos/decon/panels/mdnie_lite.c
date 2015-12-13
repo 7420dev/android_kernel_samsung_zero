@@ -64,6 +64,7 @@
 #define GET_LSB_8BIT(x)		((x >> 0) & (BIT(8) - 1))
 
 static struct class *mdnie_class;
+static struct mdnie_info *g_mdnie = NULL;
 
 /* Do not call mdnie write directly */
 static int mdnie_write(struct mdnie_info *mdnie, struct mdnie_table *table)
@@ -463,6 +464,15 @@ static ssize_t accessibility_store(struct device *dev,
 	return count;
 }
 
+//gm
+void mdnie_toggle_negative(void)
+{
+	mutex_lock(&g_mdnie->lock);
+	g_mdnie->accessibility = !g_mdnie->accessibility;
+	mutex_unlock(&g_mdnie->lock);
+	mdnie_update(g_mdnie);
+}
+
 static ssize_t color_correct_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -779,7 +789,6 @@ static int mdnie_register_fb(struct mdnie_info *mdnie)
 }
 
 #ifdef CONFIG_ALWAYS_RELOAD_MTP_FACTORY_BUILD
-static struct mdnie_info *g_mdnie = NULL;
 void update_mdnie_coordinate( u16 coordinate0, u16 coordinate1 )
 {
 	struct mdnie_info *mdnie = g_mdnie;
@@ -825,10 +834,6 @@ int mdnie_register(struct device *p, void *data, mdnie_w w, mdnie_r r, u16 *coor
 		goto error1;
 	}
 
-#ifdef CONFIG_ALWAYS_RELOAD_MTP_FACTORY_BUILD
-	g_mdnie = mdnie;
-#endif
-
 	mdnie->dev = device_create(mdnie_class, p, 0, &mdnie, "mdnie");
 	if (IS_ERR_OR_NULL(mdnie->dev)) {
 		pr_err("failed to create mdnie device\n");
@@ -864,12 +869,15 @@ int mdnie_register(struct device *p, void *data, mdnie_w w, mdnie_r r, u16 *coor
 	mdnie->enable = 1;
 	mdnie_update(mdnie);
 
+	g_mdnie = mdnie;
+
 	dev_info(mdnie->dev, "registered successfully\n");
 
 	return 0;
 
 error2:
 	kfree(mdnie);
+	kfree(g_mdnie);
 error1:
 	class_destroy(mdnie_class);
 error0:

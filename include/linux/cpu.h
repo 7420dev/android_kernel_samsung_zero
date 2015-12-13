@@ -125,7 +125,7 @@ enum {
 }
 
 #define __cpu_notifier(fn, pri) {				\
-	static struct notifier_block fn##_nb =			\
+	static struct notifier_block fn##_nb __cpuinitdata =	\
 		{ .notifier_call = fn, .priority = pri };	\
 	__register_cpu_notifier(&fn##_nb);			\
 }
@@ -276,6 +276,7 @@ void cpu_startup_entry(enum cpuhp_state state);
 void cpu_idle(void);
 
 void cpu_idle_poll_ctrl(bool enable);
+void per_cpu_idle_poll_ctrl(int cpu, bool enable);
 
 void arch_cpu_idle(void);
 void arch_cpu_idle_prepare(void);

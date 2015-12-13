@@ -113,6 +113,7 @@ enum pageflags {
 	PG_scfslower,
 	PG_nocache,
 #endif
+	PG_readahead,		/* page in a readahead window */
 	__NR_PAGEFLAGS,
 
 	/* Filesystems */

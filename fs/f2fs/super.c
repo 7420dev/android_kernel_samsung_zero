@@ -41,8 +41,7 @@ static struct kset *f2fs_kset;
 
 /* f2fs-wide shrinker description */
 static struct shrinker f2fs_shrinker_info = {
-	.scan_objects = f2fs_shrink_scan,
-	.count_objects = f2fs_shrink_count,
+	.shrink = f2fs_shrink_scan,
 	.seeks = DEFAULT_SEEKS,
 };
 
@@ -215,8 +214,10 @@ F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, ipu_policy, ipu_policy);
 F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, min_ipu_util, min_ipu_util);
 F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, min_fsync_blocks, min_fsync_blocks);
 F2FS_RW_ATTR(NM_INFO, f2fs_nm_info, ram_thresh, ram_thresh);
+F2FS_RW_ATTR(NM_INFO, f2fs_nm_info, ra_nid_pages, ra_nid_pages);
 F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, max_victim_search, max_victim_search);
 F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, dir_level, dir_level);
+F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, cp_interval, cp_interval);
 
 #define ATTR_LIST(name) (&f2fs_attr_##name.attr)
 static struct attribute *f2fs_attrs[] = {
@@ -233,6 +234,8 @@ static struct attribute *f2fs_attrs[] = {
 	ATTR_LIST(max_victim_search),
 	ATTR_LIST(dir_level),
 	ATTR_LIST(ram_thresh),
+	ATTR_LIST(ra_nid_pages),
+	ATTR_LIST(cp_interval),
 	NULL,
 };
 
@@ -294,11 +297,16 @@ static int parse_options(struct super_block *sb, char *options)
 
 			if (!name)
 				return -ENOMEM;
-			if (strlen(name) == 2 && !strncmp(name, "on", 2))
+			if (strlen(name) == 2 && !strncmp(name, "on", 2)) {
 				set_opt(sbi, BG_GC);
-			else if (strlen(name) == 3 && !strncmp(name, "off", 3))
+				clear_opt(sbi, FORCE_FG_GC);
+			} else if (strlen(name) == 3 && !strncmp(name, "off", 3)) {
 				clear_opt(sbi, BG_GC);
-			else {
+				clear_opt(sbi, FORCE_FG_GC);
+			} else if (strlen(name) == 4 && !strncmp(name, "sync", 4)) {
+				set_opt(sbi, BG_GC);
+				set_opt(sbi, FORCE_FG_GC);
+			} else {
 				kfree(name);
 				return -EINVAL;
 			}
@@ -636,10 +644,14 @@ static int f2fs_show_options(struct seq_file *seq, struct dentry *root)
 {
 	struct f2fs_sb_info *sbi = F2FS_SB(root->d_sb);
 
-	if (!f2fs_readonly(sbi->sb) && test_opt(sbi, BG_GC))
-		seq_printf(seq, ",background_gc=%s", "on");
-	else
+	if (!f2fs_readonly(sbi->sb) && test_opt(sbi, BG_GC)) {
+		if (test_opt(sbi, FORCE_FG_GC))
+			seq_printf(seq, ",background_gc=%s", "sync");
+		else
+			seq_printf(seq, ",background_gc=%s", "on");
+	} else {
 		seq_printf(seq, ",background_gc=%s", "off");
+	}
 	if (test_opt(sbi, DISABLE_ROLL_FORWARD))
 		seq_puts(seq, ",disable_roll_forward");
 	if (test_opt(sbi, DISCARD))
@@ -747,6 +759,7 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
 	int err, active_logs;
 	bool need_restart_gc = false;
 	bool need_stop_gc = false;
+	bool no_extent_cache = !test_opt(sbi, EXTENT_CACHE);
 
 	sync_filesystem(sb);
 
@@ -771,6 +784,14 @@ static int f2fs_remount(struct super_block *sb, int *flags, char *data)
 	 */
 	if (f2fs_readonly(sb) && (*flags & MS_RDONLY))
 		goto skip;
+
+	/* disallow enable/disable extent_cache dynamically */
+	if (no_extent_cache == !!test_opt(sbi, EXTENT_CACHE)) {
+		err = -EINVAL;
+		f2fs_msg(sbi->sb, KERN_WARNING,
+				"switch extent_cache option is not allowed");
+		goto restore_opts;
+	}
 
 	/*
 	 * We stop the GC thread if FS is mounted as RO
@@ -1001,6 +1022,7 @@ static void init_sb_info(struct f2fs_sb_info *sbi)
 		atomic_set(&sbi->nr_pages[i], 0);
 
 	sbi->dir_level = DEF_DIR_LEVEL;
+	sbi->cp_interval = DEF_CP_INTERVAL;
 	clear_sbi_flag(sbi, SBI_NEED_FSCK);
 
 	INIT_LIST_HEAD(&sbi->s_list);
@@ -1337,6 +1359,8 @@ try_onemore:
 		f2fs_commit_super(sbi, true);
 	}
 
+	sbi->cp_expires = round_jiffies_up(jiffies);
+
 	return 0;
 
 free_kobj:
@@ -1451,9 +1475,7 @@ static int __init init_f2fs_fs(void)
 	if (err)
 		goto free_kset;
 
-	err = register_shrinker(&f2fs_shrinker_info);
-	if (err)
-		goto free_crypto;
+	register_shrinker(&f2fs_shrinker_info);
 
 	err = register_filesystem(&f2fs_fs_type);
 	if (err)
@@ -1464,7 +1486,6 @@ static int __init init_f2fs_fs(void)
 
 free_shrinker:
 	unregister_shrinker(&f2fs_shrinker_info);
-free_crypto:
 	f2fs_exit_crypto();
 free_kset:
 	kset_unregister(f2fs_kset);

@@ -998,6 +998,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
 	zone->present_pages += onlined_pages;
 	zone->zone_pgdat->node_present_pages += onlined_pages;
 	if (onlined_pages) {
+		drain_all_pages();
 		node_states_set_node(zone_to_nid(zone), &arg);
 		if (need_zonelists_rebuild)
 			build_all_zonelists(NULL, NULL);
@@ -1583,7 +1584,10 @@ repeat:
 	undo_isolate_page_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
 	/* removal success */
 	zone->managed_pages -= offlined_pages;
-	zone->present_pages -= offlined_pages;
+	if (offlined_pages > zone->present_pages)
+		zone->present_pages = 0;
+	else
+		zone->present_pages -= offlined_pages;
 	zone->zone_pgdat->node_present_pages -= offlined_pages;
 	totalram_pages -= offlined_pages;
 

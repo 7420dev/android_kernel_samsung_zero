@@ -32,7 +32,7 @@
 /* number of reports to buffer */
 #define OVR_HIDRAW_BUFFER_SIZE 64
 
-#define OVR_HIDRAW_MAX_DEVICES 8
+#define OVR_HIDRAW_MAX_DEVICES 64
 
 #define OVR_FIRST_MINOR 0
 
@@ -45,9 +45,9 @@ static DEFINE_SPINLOCK(list_lock);
 static int ovr_major;
 static struct cdev ovr_cdev;
 
-#define MONITOR_MAX 20
+#define MONITOR_MAX 32
 static int opens = 0;
-static unsigned long monitor_info[MONITOR_MAX][3] = {{0,},};
+static unsigned long monitor_info[MONITOR_MAX][4] = {{0,},};
 static unsigned int isr_count = 0;
 static unsigned long last_isr = 0;
 
@@ -111,7 +111,7 @@ static ssize_t ovr_hidraw_read(struct file *file, char __user *buffer, size_t co
 			{
 				int i;
 				for (i=0; i<MONITOR_MAX; i++) {
-					if (monitor_info[i][0] == current->pid) {
+					if (monitor_info[i][0] == (unsigned long)file) {
 						monitor_info[i][1]++;
 						monitor_info[i][2] = jiffies;
 						break;
@@ -207,30 +207,28 @@ static void ovr_monitor_work(struct work_struct *work)
 	mutex_lock(&minors_lock);
 	if (opens > 0 && ovr_minor >= 0 && ovr_hidraw_table[ovr_minor] && ovr_hidraw_table[ovr_minor]->exist) {
 		dev = ovr_hidraw_table[ovr_minor]->hid;
-/*		if (dev->product == USB_DEVICE_ID_SAMSUNG_GEARVR_2) { */
-			if (dev && dev->hid_get_raw_report) {
-				buf = kmalloc(count * sizeof(__u8), GFP_KERNEL);
-				if (buf) {
-					ret = dev->hid_get_raw_report(dev, report_number, buf, count, report_type);
-					if (ret < 0) {
-						printk("OVR: hid_get_raw_report error %d\n", ret);
-					} else {
-						printk("OVR: timestamp(0x%2.2X%2.2X%2.2X%2.2X) sensor(0x%2.2X%2.2X%2.2X%2.2X) pui(0x%2.2X%2.2X%2.2X%2.2X) proxy(%d) mainloop(0x%2.2X) (%2.2X %2.2X %2.2X %2.2X %2.2X %2.2X)\n",
-							buf[7], buf[6], buf[5], buf[4], buf[11], buf[10], buf[9], buf[8], buf[15], buf[14], buf[13], buf[12], buf[16], buf[17], buf[18], buf[19], buf[20], buf[21], buf[22], buf[23]);
-					}
-					kfree(buf);
+		if (dev && dev->hid_get_raw_report) {
+			buf = kmalloc(count * sizeof(__u8), GFP_KERNEL);
+			if (buf) {
+				ret = dev->hid_get_raw_report(dev, report_number, buf, count, report_type);
+				if (ret < 0) {
+					printk("OVR: hid_get_raw_report error %d\n", ret);
 				} else {
-					printk("OVR: no mem for monitor report\n");
+					printk("OVR: timestamp(0x%2.2X%2.2X%2.2X%2.2X) sensor(0x%2.2X%2.2X%2.2X%2.2X) pui(0x%2.2X%2.2X%2.2X%2.2X) proxy(%d) mainloop(0x%2.2X) (%2.2X %2.2X %2.2X %2.2X %2.2X %2.2X)\n",
+						buf[7], buf[6], buf[5], buf[4], buf[11], buf[10], buf[9], buf[8], buf[15], buf[14], buf[13], buf[12], buf[16], buf[17], buf[18], buf[19], buf[20], buf[21], buf[22], buf[23]);
 				}
+				kfree(buf);
+			} else {
+				printk("OVR: no mem for monitor report\n");
 			}
-/*		} */
+		}
 
 		printk("OVR: isr(%d), diff(isr):%ums\n", isr_count, jiffies_to_msecs(now-last_isr));
 		isr_count = 0;
 
 		for (i=0; i<MONITOR_MAX; i++) {
 			if (monitor_info[i][0]) {
-				printk("OVR: %lu(%lu), diff(read):%ums\n", monitor_info[i][0], monitor_info[i][1], jiffies_to_msecs(now-monitor_info[i][2]));
+				printk("OVR: 0x%x %lu(%lu), diff(read):%u secs\n", (unsigned int)monitor_info[i][0], monitor_info[i][3], monitor_info[i][1], jiffies_to_msecs(now-monitor_info[i][2])/1000);
 				monitor_info[i][1] = 0;
 			}
 		}
@@ -338,7 +336,7 @@ static int ovr_hidraw_open(struct inode *inode, struct file *file)
 		goto out_unlock;
 	}
 
-	printk("OVR: open (%d:%s) >>>\n", current->pid, current->comm);
+	printk("OVR: open %d (%d:%s) >>>\n", minor, current->pid, current->comm);
 
 	list->hidraw = ovr_hidraw_table[minor];
 	mutex_init(&list->read_mutex);
@@ -361,36 +359,28 @@ static int ovr_hidraw_open(struct inode *inode, struct file *file)
 		if (err < 0) {
 			hid_hw_power(dev->hid, PM_HINT_NORMAL);
 			dev->open--;
-		} else {
-			/* 1st open */
-			int i;
+		}
+	}
 
-			for (i=0; i<MONITOR_MAX; i++)
-				monitor_info[i][0] = 0;
+	if (minor == ovr_minor) {
+		int i;
 
-			opens = 0;
-			ovr_minor = minor;
+		for (i=0; i<MONITOR_MAX; i++) {
+			if (monitor_info[i][0] == 0) {
+				monitor_info[i][0] = (unsigned long)file;
+				monitor_info[i][1] = 0;
+				monitor_info[i][2] = jiffies;
+				monitor_info[i][3] = current->pid;
+				break;
+			}
+		}
+
+		opens = dev->open;
+		if (opens == 1) {
 			queue_delayed_work(ovr_wq, &ovr_work, msecs_to_jiffies(2000));
 		}
 	}
 
-	if (dev->open > opens) {
-		int i;
-
-		for (i=0; i<MONITOR_MAX; i++) {
-			if (monitor_info[i][0] == current->pid)
-				break;
-		}
-		if (i >= MONITOR_MAX) {
-			for (i=0; i<MONITOR_MAX; i++) {
-				if (monitor_info[i][0] == 0) {
-					monitor_info[i][0] = current->pid;
-					break;
-				}
-			}
-		}
-	}
-	opens = dev->open;
 	printk("OVR: open(%d) err %d <<<\n", opens, err);
 
 out_unlock:
@@ -423,19 +413,34 @@ static int ovr_hidraw_release(struct inode * inode, struct file * file)
 		goto unlock;
 	}
 
-	printk("OVR: release (%d:%s) >>>\n", current->pid, current->comm);
+	printk("OVR: release %d (%d:%s) >>>\n", minor, current->pid, current->comm);
 
 	spin_lock_irqsave(&list_lock, flags);
 	list_del(&list->node);
 	spin_unlock_irqrestore(&list_lock, flags);
 
 	dev = ovr_hidraw_table[minor];
-	if (!--dev->open) {
+	--dev->open;
+
+	if (minor == ovr_minor) {
+		for (i=0; i<MONITOR_MAX; i++) {
+			if (monitor_info[i][0] == (unsigned long)file) {
+				monitor_info[i][0] = 0;
+				break;
+			}
+		}
+
+		opens = dev->open;
+	}
+
+	if (!dev->open) {
 		if (list->hidraw->exist) {
 			hid_hw_power(dev->hid, PM_HINT_NORMAL);
 			hid_hw_close(dev->hid);
 		} else {
+			printk("OVR: freed ovr_hidraw_table %d\n", minor);
 			kfree(list->hidraw);
+			ovr_hidraw_table[minor] = NULL;
 		}
 	}
 
@@ -444,17 +449,6 @@ static int ovr_hidraw_release(struct inode * inode, struct file * file)
 	kfree(list);
 	ret = 0;
 
-	for (i=0; i<MONITOR_MAX; i++) {
-		if (monitor_info[i][0] == current->pid) {
-			monitor_info[i][0] = 0;
-		}
-	}
-
-	opens = dev->open;
-	if (opens <= 0) {
-		opens = 0;
-		ovr_minor = -1;
-	}
 	printk("OVR: release(%d) <<<\n", opens);
 
 unlock:
@@ -519,7 +513,7 @@ static void write_file(char *filename, char *data)
 
 int ovr_connect(struct hid_device *hid)
 {
-	int minor, result;
+	int minor, result, i;
 	struct hidraw *dev;
 
 	/* we accept any HID device, no matter the applications */
@@ -534,13 +528,17 @@ int ovr_connect(struct hid_device *hid)
 
 	for (minor = 0; minor < OVR_HIDRAW_MAX_DEVICES; minor++)
 	{
-		if (ovr_hidraw_table[minor])
+		if (ovr_hidraw_table[minor]) {
+			printk("OVR: old ovr_hidraw_table %d\n", minor);
 			continue;
+		}
 
 		ovr_hidraw_table[minor] = dev;
 		result = 0;
 		break;
 	}
+
+	printk("OVR: connect %d %d (%d:%s) >>>\n", minor, result, current->pid, current->comm);
 
 	if (result) {
 		mutex_unlock(&minors_lock);
@@ -558,6 +556,14 @@ int ovr_connect(struct hid_device *hid)
 		kfree(dev);
 		goto out;
 	}
+
+	for (i=0; i<MONITOR_MAX; i++)
+		monitor_info[i][0] = 0;
+
+	opens = 0;
+	ovr_minor = minor;
+
+	printk("OVR: connect <<<\n");
 
 	mutex_unlock(&minors_lock);
 	init_waitqueue_head(&dev->wait);
@@ -583,19 +589,29 @@ void ovr_disconnect(struct hid_device *hid)
 
 	mutex_lock(&minors_lock);
 
+	printk("OVR: disconnect %d %d (%d:%s) >>>\n", hidraw->minor, hidraw->open, current->pid, current->comm);
+
+	if (hidraw->minor == ovr_minor) {
+		opens = 0;
+		ovr_minor = -1;
+	}
+
 	hidraw->exist = 0;
 
 	device_destroy(ovr_class, MKDEV(ovr_major, hidraw->minor));
 
-	ovr_hidraw_table[hidraw->minor] = NULL;
-
 	if (hidraw->open) {
+		hid_hw_power(hid, PM_HINT_NORMAL);
 		hid_hw_close(hid);
 
 		wake_up_interruptible(&hidraw->wait);
 	} else {
+		printk("OVR: freed ovr_hidraw_table %d\n", hidraw->minor);
+		ovr_hidraw_table[hidraw->minor] = NULL;
 		kfree(hidraw);
 	}
+
+	printk("OVR: disconnect <<<\n");
 
 	mutex_unlock(&minors_lock);
 
@@ -736,9 +752,15 @@ static int ovr_probe(struct hid_device *hdev, const struct hid_device_id *id)
 		goto exit;
 	}
 
-	if (intf->cur_altsetting->desc.bInterfaceProtocol
+	if (!intf || intf->cur_altsetting->desc.bInterfaceProtocol
 			!= USB_TRACKER_INTERFACE_PROTOCOL) {
 		return 0;
+	}
+
+	if (intf) {
+		struct usb_device *udev = interface_to_usbdev(intf);
+		if (udev)
+			printk("OVR: %s\n", udev->serial);
 	}
 
 	retval = ovr_connect(hdev);

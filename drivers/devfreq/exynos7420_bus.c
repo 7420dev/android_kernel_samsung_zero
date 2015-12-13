@@ -3968,7 +3968,7 @@ static struct dmc_phy_dfs_mif_table dfs_phy_mif_table_nonsec[] =
 			0x00000000, 0x00000000, PHY_DVFS_CON4_SET1_MASK, PHY_DVFS_CON4_SET0_MASK,
 			0x005010F0, 0x0005010F, PHY_DVFS_CON5_SET1_MASK, PHY_DVFS_CON5_SET0_MASK),
 	PHY_DVFS_CON(0x82A80000|(dvfs_dqs_osc_en<<17), 0x41540000|(dvfs_dqs_osc_en<<16), PHY_DVFS_CON0_SET1_MASK, PHY_DVFS_CON0_SET0_MASK,
-			0x8C004000, 0x400C0040, PHY_DVFS_CON1_SET1_MASK, PHY_DVFS_CON1_SET0_MASK,
+			0x86004000, 0x40060040, PHY_DVFS_CON1_SET1_MASK, PHY_DVFS_CON1_SET0_MASK,
 			0x20000000, 0x00400000, PHY_DVFS_CON2_SET1_MASK, PHY_DVFS_CON2_SET0_MASK,
 			0x00103000, 0x00000103, PHY_DVFS_CON3_SET1_MASK, PHY_DVFS_CON3_SET0_MASK,
 			0x00000000, 0x00000000, PHY_DVFS_CON4_SET1_MASK, PHY_DVFS_CON4_SET0_MASK,
@@ -4952,8 +4952,6 @@ static int exynos7_devfreq_mif_set_freq(struct devfreq_data_mif *data,
 		voltage = devfreq_mif_opp_list[target_idx].volt;
 	} else {
 		if ((data->pll_safe_idx <= old_idx) && (target_idx < data->pll_safe_idx))
-			voltage = devfreq_mif_opp_list[target_idx].volt;
-		else if ((old_idx <= MIF_LV3) && (target_idx <= MIF_LV3))
 			voltage = devfreq_mif_opp_list[target_idx].volt;
 		else if ((old_idx < data->pll_safe_idx) && (data->pll_safe_idx <= target_idx))
 			voltage = devfreq_mif_opp_list[pll_safe_idx].volt + CMOS_SE_OFFSET;

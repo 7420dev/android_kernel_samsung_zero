@@ -1049,6 +1049,15 @@ static int touchkey_i2c_update(struct touchkey_i2c *tkey_i2c)
 	return ret;
 }
 
+static inline int64_t get_time_inms(void) {
+	int64_t tinms;
+	struct timespec cur_time = current_kernel_time();
+	tinms =  cur_time.tv_sec * MSEC_PER_SEC;
+	tinms += cur_time.tv_nsec / NSEC_PER_MSEC;
+	return tinms;
+}
+
+extern void mdnie_toggle_negative(void);
 
 static irqreturn_t touchkey_interrupt(int irq, void *dev_id)
 {
@@ -1057,6 +1066,8 @@ static irqreturn_t touchkey_interrupt(int irq, void *dev_id)
 	int ret;
 	int i;
 	int keycode_data[touchkey_count];
+	static int64_t mtkey_lasttime = 0;
+	static int mtkey_count = 0;
 
 	if (unlikely(!touchkey_probe)) {
 		tk_debug_err(true, &tkey_i2c->client->dev, "%s: Touchkey is not probed\n", __func__);
@@ -1085,6 +1096,23 @@ static irqreturn_t touchkey_interrupt(int irq, void *dev_id)
 #if defined(CONFIG_INPUT_BOOSTER)
 			input_booster_send_event(BOOSTER_DEVICE_TOUCHKEY, (keycode_data[i] % 2));
 #endif
+			//mdnie negative effect toggle by gm
+			if (touchkey_keycode[i] == 254) {
+				if (keycode_data[i] % 2) {
+					if (get_time_inms() - mtkey_lasttime < 300) {
+						mtkey_count++;
+						printk(KERN_INFO "repeated mtkey action %d.\n", mtkey_count);
+					} else {
+						mtkey_count = 0;
+					}
+				} else {
+					if (mtkey_count == 3) {
+						mdnie_toggle_negative();
+						mtkey_count = 0;
+					}
+					mtkey_lasttime = get_time_inms();
+				}
+			}
 		}
 	}
 

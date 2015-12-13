@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: wl_cfg80211.c 561870 2015-06-08 06:22:06Z $
+ * $Id: wl_cfg80211.c 572607 2015-07-20 10:40:32Z $
  */
 /* */
 #include <typedefs.h>
@@ -4594,8 +4594,8 @@ wl_cfg80211_disconnect(struct wiphy *wiphy, struct net_device *dev,
 					return err;
 				}
 #ifdef CUSTOMER_HW4
-			WL_ERR(("Wait for complete of connecting \n"));
-			OSL_SLEEP(200);
+				WL_ERR(("Wait for complete of connecting \n"));
+				OSL_SLEEP(200);
 #endif /* CUSTOMER_HW4 */
 		}
 	}
@@ -9382,6 +9382,11 @@ wl_notify_roaming_status(struct bcm_cfg80211 *cfg, bcm_struct_cfgdev *cfgdev,
 		wl_update_prof(cfg, ndev, e, &act, WL_PROF_ACT);
 		wl_update_prof(cfg, ndev, NULL, (void *)&e->addr, WL_PROF_BSSID);
 	}
+#ifdef DHD_LOSSLESS_ROAMING
+	else if ((event == WLC_E_ROAM || event == WLC_E_BSSID) && status != WLC_E_STATUS_SUCCESS) {
+		wl_del_roam_timeout(cfg);
+	}
+#endif
 	return err;
 }
 
@@ -12179,7 +12184,8 @@ void wl_cfg80211_detach(void *para)
 
 static void wl_wakeup_event(struct bcm_cfg80211 *cfg)
 {
-	if (cfg->event_tsk.thr_pid >= 0) {
+	dhd_pub_t *dhd = (dhd_pub_t *)(cfg->pub);
+	if (dhd->up && (cfg->event_tsk.thr_pid >= 0)) {
 		DHD_OS_WAKE_LOCK(cfg->pub);
 		up(&cfg->event_tsk.sema);
 	}
@@ -12244,8 +12250,8 @@ static s32 wl_event_handler(void *data)
 				WL_DBG(("Unknown Event (%d): ignoring\n", e->etype));
 			}
 			wl_put_event(e);
-		}
 		DHD_OS_WAKE_UNLOCK(cfg->pub);
+	}
 	}
 	WL_ERR(("was terminated\n"));
 	complete_and_exit(&tsk->completed, 0);
@@ -12987,6 +12993,8 @@ static s32 __wl_cfg80211_down(struct bcm_cfg80211 *cfg)
 		cfg->wl11u = FALSE;
 	}
 #endif /* WL11U */
+
+	cfg->disable_roam_event = false;
 
 	DNGL_FUNC(dhd_cfg80211_down, (cfg));
 

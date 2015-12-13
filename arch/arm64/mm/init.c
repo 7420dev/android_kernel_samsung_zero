@@ -298,7 +298,7 @@ void __init mem_init(void)
 	free_unused_memmap();
 #endif
 
-	totalram_pages += free_all_bootmem();
+	free_all_bootmem();
 
 	reserved_pages = free_pages = 0;
 
@@ -421,4 +421,17 @@ static int __init keepinitrd_setup(char *__unused)
 }
 
 __setup("keepinitrd", keepinitrd_setup);
+#endif
+
+#ifdef CONFIG_KERNEL_TEXT_RDONLY
+void set_kernel_text_ro(void)
+{
+	unsigned long start = PFN_ALIGN(_stext);
+	unsigned long end = PFN_ALIGN(_etext);
+
+	/*
+	 * Set the kernel identity mapping for text RO.
+	 */
+	set_memory_ro(start, (end - start) >> PAGE_SHIFT);
+}
 #endif

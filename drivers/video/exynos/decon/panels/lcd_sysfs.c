@@ -418,7 +418,6 @@ static ssize_t alpm_store(struct device *dev,
 			prev_brightness = priv->bd->props.brightness;
 			priv->bd->props.brightness = UI_MIN_BRIGHTNESS;
 			dsim_panel_set_brightness(dsim, 1);
-			msleep(700);
 			alpm_set_mode(dsim, ALPM_ON);
 		}
 	} else {
@@ -435,6 +434,10 @@ static ssize_t alpm_store(struct device *dev,
 	} else {
 		if ((priv->state == PANEL_STATE_RESUMED)&& priv->current_alpm)
 			alpm_set_mode(dsim, ALPM_OFF);
+#if defined(CONFIG_PANEL_S6E3HF3_DYNAMIC)
+			usleep_range(17000, 17000);
+			dsim_panel_set_brightness(dsim, 1);
+#endif
 	}
 #endif
 	priv->alpm = value;
